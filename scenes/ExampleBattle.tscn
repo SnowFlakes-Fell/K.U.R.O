@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://d15hs7qpxqhf3"]
+[gd_scene load_steps=17 format=3 uid="uid://d15hs7qpxqhf3"]
 
 [ext_resource type="Script" uid="uid://btbsyf4hokvud" path="res://scripts/actors/heroes/SamplePlayer.cs" id="1_player"]
 [ext_resource type="Script" uid="uid://hhpl8w4ty1ky" path="res://scripts/actors/enemies/SampleEnemy.cs" id="2_enemy"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://d3ancpb5wo2ie" path="res://scripts/actors/heroes/states/PlayerAttackState.cs" id="6_bhpvs"]
 [ext_resource type="Script" uid="uid://l40es7irdvdw" path="res://scripts/actors/heroes/states/PlayerHitState.cs" id="7_w7wnm"]
 [ext_resource type="Script" uid="uid://ba1kd5qgh17ag" path="res://scripts/actors/heroes/states/PlayerRunState.cs" id="8_bhpvs"]
+[ext_resource type="PackedScene" path="res://scenes/properties/DroppableExampleProperty.tscn" id="11_drop_example"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_attack"]
 size = Vector2(64.75629, 180.66397)
@@ -46,12 +47,11 @@ offset_right = 1280.0
 offset_bottom = 720.0
 color = Color(0.4, 0.35, 0.3, 1)
 
-[node name="Player" type="CharacterBody2D" parent="." node_paths=PackedStringArray("AttackArea")]
+[node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(200, 400)
 collision_mask = 3
 motion_mode = 1
 script = ExtResource("1_player")
-AttackArea = NodePath("SpineCharacter/AttackArea")
 
 [node name="SpineCharacter" parent="Player" instance=ExtResource("3_spine")]
 position = Vector2(-4, 62.999996)
@@ -97,13 +97,11 @@ script = ExtResource("7_w7wnm")
 [node name="Run" type="Node" parent="Player/StateMachine"]
 script = ExtResource("8_bhpvs")
 
-[node name="Enemy" type="CharacterBody2D" parent="." node_paths=PackedStringArray("AttackArea")]
+[node name="Enemy" type="CharacterBody2D" parent="."]
 position = Vector2(800, 400)
 collision_layer = 2
 motion_mode = 1
 script = ExtResource("2_enemy")
-AttackArea = NodePath("Sprite2D/AttackArea")
-FaceLeftByDefault = true
 
 [node name="Sprite2D" type="Sprite2D" parent="Enemy"]
 modulate = Color(1, 0.3, 0.3, 1)
@@ -122,6 +120,12 @@ shape = SubResource("RectangleShape2D_w7wnm")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy"]
 scale = Vector2(3.9243398, 2.6851737)
 shape = SubResource("CapsuleShape2D_enemy")
+
+[node name="DroppableExample" parent="." instance=ExtResource("11_drop_example")]
+z_index = 255
+position = Vector2(419, 360)
+EnergyValue = 25
+PickedColor = Color(0.19607843, 0.8039216, 0.19607843, 1)
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -145,5 +149,5 @@ offset_right = 200.0
 offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 0
-text = "WASD: Move | Space: Attack | Shift: Run"
+text = "WASD: Move | Space: Attack | Shift: Run | F: Pick Up | G: Put Down"
 horizontal_alignment = 1
