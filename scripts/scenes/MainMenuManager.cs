@@ -164,27 +164,7 @@ namespace Kuros.Scenes
         private void OnStartGame()
         {
             GD.Print("开始新游戏");
-            GD.Print($"切换到场景: {BattleScenePath}");
-            
-            // 清理UI
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.ClearAllUI();
-            }
-            
-            // 检查场景文件是否存在
-            if (!ResourceLoader.Exists(BattleScenePath))
-            {
-                GD.PrintErr($"错误：场景文件不存在: {BattleScenePath}");
-                return;
-            }
-            
-            // 切换场景
-            var error = GetTree().ChangeSceneToFile(BattleScenePath);
-            if (error != Error.Ok)
-            {
-                GD.PrintErr($"错误：无法切换场景: {BattleScenePath}, 错误代码: {error}");
-            }
+            GetTree().ChangeSceneToFile(BattleScenePath);
         }
 
         private void OnModeSelectionRequested()
@@ -205,39 +185,15 @@ namespace Kuros.Scenes
         private void OnModeSelected(string modeName)
         {
             GD.Print($"选择了模式: {modeName}");
-            GD.Print($"切换到场景: {BattleScenePath}");
-            
-            // 清理UI
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.ClearAllUI();
-            }
-            
             // 根据模式加载不同的场景
-            var error = GetTree().ChangeSceneToFile(BattleScenePath);
-            if (error != Error.Ok)
-            {
-                GD.PrintErr($"错误：无法切换场景: {BattleScenePath}, 错误代码: {error}");
-            }
+            GetTree().ChangeSceneToFile(BattleScenePath);
         }
 
         private void OnSaveSlotSelected(int slotIndex)
         {
             GD.Print($"加载存档槽位: {slotIndex}");
-            GD.Print($"切换到场景: {BattleScenePath}");
-            
-            // 清理UI
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.ClearAllUI();
-            }
-            
             // 这里应该加载存档数据
-            var error = GetTree().ChangeSceneToFile(BattleScenePath);
-            if (error != Error.Ok)
-            {
-                GD.PrintErr($"错误：无法切换场景: {BattleScenePath}, 错误代码: {error}");
-            }
+            GetTree().ChangeSceneToFile(BattleScenePath);
         }
 
         private void OnQuit()

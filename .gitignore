@@ -13,6 +13,7 @@ obj/
 *.suo
 *.userprefs
 .vs/
+.vscode/
 *.csproj.user
 *.unityproj
 *.sln.iml
