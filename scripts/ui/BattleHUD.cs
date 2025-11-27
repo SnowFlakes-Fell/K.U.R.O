@@ -47,67 +47,34 @@ namespace Kuros.UI
 			}
 
 			// 初始化UI显示
-			UpdateHealthDisplay();
-			UpdateScoreDisplay();
-			UpdateStatsLabel();
+			UpdateDisplay();
 
 			// 发出就绪信号
 			EmitSignal(SignalName.HUDReady);
 		}
 
 		/// <summary>
-		/// 更新玩家生命值显示
-		/// </summary>
-		public void UpdateHealth(int current, int max)
-		{
-			_currentHealth = current;
-			_maxHealth = max;
-			UpdateHealthDisplay();
-			UpdateStatsLabel();
-		}
-
-		/// <summary>
-		/// 更新分数显示
-		/// </summary>
-		public void UpdateScore(int score)
-		{
-			_score = score;
-			UpdateScoreDisplay();
-			UpdateStatsLabel();
-		}
-
-		/// <summary>
-		/// 更新玩家状态（生命值和分数）
+		/// 更新玩家状态
 		/// </summary>
 		public void UpdateStats(int health, int maxHealth, int score)
 		{
 			_currentHealth = health;
 			_maxHealth = maxHealth;
 			_score = score;
-			UpdateHealthDisplay();
-			UpdateScoreDisplay();
-			UpdateStatsLabel();
+			UpdateDisplay();
 		}
 
-		private void UpdateHealthDisplay()
+		private void UpdateDisplay()
 		{
 			if (HealthBar != null)
 			{
 				HealthBar.MaxValue = _maxHealth;
 				HealthBar.Value = _currentHealth;
 			}
-		}
-
-		private void UpdateScoreDisplay()
-		{
 			if (ScoreLabel != null)
 			{
 				ScoreLabel.Text = $"Score: {_score}";
 			}
-		}
-
-		private void UpdateStatsLabel()
-		{
 			if (PlayerStatsLabel != null)
 			{
 				PlayerStatsLabel.Text = $"Player HP: {_currentHealth}/{_maxHealth}\nScore: {_score}";

@@ -151,8 +151,6 @@ namespace Kuros.UI
         private void OnSettingsPressed()
         {
             EmitSignal(SignalName.SettingsRequested);
-            // 这里可以打开设置菜单
-            GD.Print("打开设置菜单");
         }
 
         private void OnQuitPressed()
