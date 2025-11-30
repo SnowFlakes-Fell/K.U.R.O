@@ -60,15 +60,20 @@ namespace Kuros.Actors.Heroes
                 TryHandleDrop(DropDisposition.Throw);
             }
 
+            if (Input.IsActionJustPressed("item_select_right"))
+            {
+                InventoryComponent?.SelectNextBackpackSlot();
+            }
+
+            if (Input.IsActionJustPressed("item_select_left"))
+            {
+                InventoryComponent?.SelectPreviousBackpackSlot();
+            }
+
             if (Input.IsActionJustPressed("take_up"))
             {
                 TriggerPickupState();
             }
-        }
-
-        public bool TryTriggerThrowAfterAnimation()
-        {
-            return TryHandleDrop(DropDisposition.Throw, skipAnimation: true);
         }
 
         public bool TryTriggerThrowAfterAnimation()
@@ -88,30 +93,46 @@ namespace Kuros.Actors.Heroes
                 return false;
             }
 
-            if (!InventoryComponent.HasHeldItem)
+            var selectedStack = InventoryComponent.GetSelectedBackpackStack();
+            if (selectedStack == null)
             {
-                GameLogger.Info(nameof(PlayerItemInteractionComponent), "当前没有持有物品，无法执行丢弃/投掷。");
                 return false;
             }
 
             if (!skipAnimation && disposition == DropDisposition.Throw)
             {
-                TriggerThrowState();
-                return false;
+                if (TryTriggerThrowState())
+                {
+                    return false;
+                }
+
+                return TryHandleDrop(disposition, skipAnimation: true);
             }
 
-            var stack = InventoryComponent.TakeHeldItemStack();
-            if (stack == null || stack.IsEmpty)
+            if (!InventoryComponent.TryExtractFromSelectedSlot(selectedStack.Quantity, out var extracted) || extracted == null || extracted.IsEmpty)
             {
                 return false;
             }
 
             var spawnPosition = ComputeSpawnPosition(disposition);
-            var entity = WorldItemSpawner.SpawnFromStack(this, stack, spawnPosition);
+            var entity = WorldItemSpawner.SpawnFromStack(this, extracted, spawnPosition);
 
             if (entity == null)
             {
-                InventoryComponent.TryReturnHeldItem(stack);
+                if (InventoryComponent.TryReturnStackToSelectedSlot(extracted, out var returned) && returned > 0 && extracted != null)
+                {
+                    if (!extracted.IsEmpty)
+                    {
+                        InventoryComponent.TryAddItem(extracted.Item, extracted.Quantity);
+                        extracted.Remove(extracted.Quantity);
+                    }
+                }
+                else if (extracted != null && !extracted.IsEmpty)
+                {
+                    InventoryComponent.TryAddItem(extracted.Item, extracted.Quantity);
+                    extracted.Remove(extracted.Quantity);
+                }
+
                 return false;
             }
 
@@ -120,6 +141,7 @@ namespace Kuros.Actors.Heroes
                 entity.ApplyThrowImpulse(GetFacingDirection() * ThrowImpulse);
             }
 
+            InventoryComponent.NotifyItemRemoved(extracted.Item.ItemId);
             return true;
         }
 
@@ -135,9 +157,8 @@ namespace Kuros.Actors.Heroes
 
         private void TriggerPickupState()
         {
-            if (InventoryComponent?.HasHeldItem == true)
+            if (InventoryComponent?.HasSelectedItem == true)
             {
-                GameLogger.Info(nameof(PlayerItemInteractionComponent), "已持有物品，无法重复拾取。");
                 return;
             }
 
@@ -157,9 +178,8 @@ namespace Kuros.Actors.Heroes
                 return false;
             }
 
-            if (InventoryComponent?.HasHeldItem == true)
+            if (InventoryComponent?.HasSelectedItem == true)
             {
-                GameLogger.Info(nameof(PlayerItemInteractionComponent), "已持有物品，无法拾取新的物品。");
                 return false;
             }
 
@@ -190,14 +210,20 @@ namespace Kuros.Actors.Heroes
             return _actor.FacingRight ? Vector2.Right : Vector2.Left;
         }
 
-        private void TriggerThrowState()
+        private bool TryTriggerThrowState()
         {
             if (_actor?.StateMachine == null)
             {
-                return;
+                return false;
+            }
+
+            if (!_actor.StateMachine.HasState(ThrowStateName))
+            {
+                return false;
             }
 
             _actor.StateMachine.ChangeState(ThrowStateName);
+            return true;
         }
 
         private static T? FindChildComponent<T>(Node? root) where T : Node
