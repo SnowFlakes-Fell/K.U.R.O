@@ -710,8 +710,8 @@ namespace Kuros.UI
 
         public override void _GuiInput(InputEvent @event)
         {
-            // 检查物品栏是否打开
-            if (!Visible || !_isOpen) return;
+            // 检查是否应该处理 ESC（包括弹窗检查）
+            if (!ShouldHandleEsc()) return;
 
             // 检查是否为 ESC 事件
             if (IsEscEvent(@event))
@@ -727,8 +727,8 @@ namespace Kuros.UI
             // 检查物品栏是否打开
             if (!Visible || !_isOpen) return;
             
-            // 检查是否为 ESC 事件
-            if (IsEscEvent(@event))
+            // 检查是否为 ESC 事件，需要同时检查弹窗状态
+            if (ShouldHandleEsc() && IsEscEvent(@event))
             {
                 HideWindow();
                 GetViewport().SetInputAsHandled();

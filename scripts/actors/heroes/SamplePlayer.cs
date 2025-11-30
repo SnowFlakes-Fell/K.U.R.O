@@ -426,12 +426,23 @@ public partial class SamplePlayer : GameActor, IPlayerStatsSource
     }
     
     /// <summary>
-    /// 添加金币
+    /// 添加金币到玩家的金币总量。
     /// </summary>
+    /// <param name="amount">要添加的金币数量，必须为非负数。</param>
+    /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 为负数时抛出。</exception>
+    /// <remarks>
+    /// 若需要扣除金币，请使用 <see cref="TrySpendGold"/> 方法，
+    /// 该方法会检查金币是否足够并安全地扣除。
+    /// </remarks>
     public void AddGold(int amount)
     {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), amount,
+                "金币数量不能为负数。若需扣除金币，请使用 TrySpendGold 方法。");
+        }
+        
         _gold += amount;
-        if (_gold < 0) _gold = 0; // 防止负数
         EmitSignal(SignalName.GoldChanged, _gold);
     }
     

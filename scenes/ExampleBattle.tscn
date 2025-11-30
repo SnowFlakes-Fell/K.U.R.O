@@ -155,21 +155,21 @@ Speed = 50.0
 [node name="DroppableExample" parent="." instance=ExtResource("11_drop_example")]
 z_index = 255
 position = Vector2(419, 360)
-SpineAttachmentRootPath = NodePath("")
+SpineAttachmentRootPath = NodePath("../Player")
 AttachmentPointPath = NodePath("SpineCharacter/Skeleton2D/root/bone/bone2/bone3/bone14/bone15/bone16")
 
 [node name="DroppableExample2" parent="." instance=ExtResource("11_drop_example")]
 z_index = 255
 position = Vector2(550, 360)
 Item = ExtResource("27_test_item_2")
-SpineAttachmentRootPath = NodePath("")
+SpineAttachmentRootPath = NodePath("../Player")
 AttachmentPointPath = NodePath("SpineCharacter/Skeleton2D/root/bone/bone2/bone3/bone14/bone15/bone16")
 
 [node name="DroppableExample3" parent="." instance=ExtResource("11_drop_example")]
 z_index = 255
 position = Vector2(680, 360)
 Item = ExtResource("28_test_item_3")
-SpineAttachmentRootPath = NodePath("")
+SpineAttachmentRootPath = NodePath("../Player")
 AttachmentPointPath = NodePath("SpineCharacter/Skeleton2D/root/bone/bone2/bone3/bone14/bone15/bone16")
 
 [node name="NPC" parent="." instance=ExtResource("25_simple_npc")]

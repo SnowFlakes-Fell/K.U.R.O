@@ -22,7 +22,6 @@ namespace Kuros.UI
 
 		private ItemDefinition? _currentItem;
 		private bool _isShowing = false;
-		private bool _wasPausedBefore = false;
 		private readonly Queue<ItemDefinition> _pendingItems = new Queue<ItemDefinition>();
 
 		// 信号
@@ -239,13 +238,6 @@ namespace Kuros.UI
 			ProcessMode = ProcessModeEnum.Always;
 			SetProcessInput(true);
 			SetProcessUnhandledInput(true);
-
-			// 保存当前暂停状态（用于兼容性，但不再需要）
-			var tree = GetTree();
-			if (tree != null)
-			{
-				_wasPausedBefore = tree.Paused;
-			}
 			
 			// 请求暂停游戏
 			if (PauseManager.Instance != null)
@@ -580,6 +572,12 @@ namespace Kuros.UI
 
 		public override void _ExitTree()
 		{
+			// 取消订阅点击区域信号，避免悬挂订阅
+			if (ClickableArea != null)
+			{
+				ClickableArea.GuiInput -= OnClickableAreaGuiInput;
+			}
+
 			// 确保恢复游戏状态
 			if (_isShowing)
 			{

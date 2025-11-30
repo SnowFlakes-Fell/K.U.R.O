@@ -193,7 +193,14 @@ namespace Kuros.Managers
             var typedDict = new Godot.Collections.Dictionary<string, Variant>();
             foreach (var key in dict.Keys)
             {
-                typedDict[key.AsString()] = dict[key];
+                if (key.VariantType == Variant.Type.String)
+                {
+                    typedDict[key.AsString()] = dict[key];
+                }
+                else
+                {
+                    GD.PushWarning($"SaveManager: 存档文件包含非字串類型的鍵，已跳過。鍵值: '{key}', 類型: {key.VariantType}, 檔案: {filePath}");
+                }
             }
 
             // 读取版本号（如果存在），支持向后兼容旧格式
@@ -223,7 +230,14 @@ namespace Kuros.Managers
                 dataDict = new Godot.Collections.Dictionary<string, Variant>();
                 foreach (var key in dataDictRaw.Keys)
                 {
-                    dataDict[key.AsString()] = dataDictRaw[key];
+                    if (key.VariantType == Variant.Type.String)
+                    {
+                        dataDict[key.AsString()] = dataDictRaw[key];
+                    }
+                    else
+                    {
+                        GD.PushWarning($"SaveManager: 存档 data 字段包含非字串類型的鍵，已跳過。鍵值: '{key}', 類型: {key.VariantType}, 檔案: {filePath}");
+                    }
                 }
             }
             else
