@@ -560,8 +560,8 @@ namespace Kuros.UI
 				var battleMenu = Kuros.Managers.UIManager.Instance?.GetUI<BattleMenu>("BattleMenu");
 				if (battleMenu != null && battleMenu.Visible)
 				{
-					// 检查点击位置是否在菜单内
-					var menuRect = battleMenu.GetRect();
+					// 检查点击位置是否在菜单内（使用全局坐标空间）
+					var menuRect = battleMenu.GetGlobalRect();
 					if (menuRect.HasPoint(mouseEvent.GlobalPosition))
 					{
 						// 点击在菜单上，不处理，让菜单处理

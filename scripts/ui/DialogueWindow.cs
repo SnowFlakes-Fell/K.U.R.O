@@ -588,7 +588,7 @@ namespace Kuros.UI
 		private void ConnectPlayerGoldSignal()
 		{
 			// 断开之前的连接
-			if (_player != null && _player.IsConnected(SamplePlayer.SignalName.GoldChanged, new Callable(this, MethodName.OnPlayerGoldChanged)))
+			if (_player != null)
 			{
 				_player.GoldChanged -= OnPlayerGoldChanged;
 			}
@@ -596,9 +596,10 @@ namespace Kuros.UI
 			// 获取玩家引用
 			_player = GetTree().GetFirstNodeInGroup("player") as SamplePlayer;
 			
-			// 连接信号
+			// 连接信号（先取消订阅再订阅，确保不重复连接）
 			if (_player != null)
 			{
+				_player.GoldChanged -= OnPlayerGoldChanged;
 				_player.GoldChanged += OnPlayerGoldChanged;
 			}
 		}
@@ -641,7 +642,7 @@ namespace Kuros.UI
 			_isDisplayingText = false;
 			
 			// 断开玩家金币变化信号
-			if (_player != null && _player.IsConnected(SamplePlayer.SignalName.GoldChanged, new Callable(this, MethodName.OnPlayerGoldChanged)))
+			if (_player != null)
 			{
 				_player.GoldChanged -= OnPlayerGoldChanged;
 			}

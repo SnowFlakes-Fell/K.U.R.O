@@ -102,16 +102,12 @@ namespace Kuros.Managers
 			
 			if (_dialogueWindow != null)
 			{
-				// 连接信号（确保不重复连接）
-				if (!_dialogueWindow.IsConnected(DialogueWindow.SignalName.DialogueEnded, new Callable(this, MethodName.OnDialogueEnded)))
-				{
-					_dialogueWindow.DialogueEnded += OnDialogueEnded;
-				}
+				// 连接事件（先取消订阅再订阅，确保不重复连接）
+				_dialogueWindow.DialogueEnded -= OnDialogueEnded;
+				_dialogueWindow.DialogueEnded += OnDialogueEnded;
 				
-				if (!_dialogueWindow.IsConnected(DialogueWindow.SignalName.DialogueActionTriggered, new Callable(this, MethodName.OnDialogueActionTriggered)))
-				{
-					_dialogueWindow.DialogueActionTriggered += OnDialogueActionTriggered;
-				}
+				_dialogueWindow.DialogueActionTriggered -= OnDialogueActionTriggered;
+				_dialogueWindow.DialogueActionTriggered += OnDialogueActionTriggered;
 				
 				// 开始显示对话
 				_dialogueWindow.StartDialogue(dialogue);
@@ -209,13 +205,11 @@ namespace Kuros.Managers
 			// 清理对话数据
 			_currentDialogue = null;
 			
-			// 断开信号连接，避免重复调用
+			// 断开事件连接，避免重复调用
 			if (_dialogueWindow != null && IsInstanceValid(_dialogueWindow))
 			{
-				if (_dialogueWindow.IsConnected(DialogueWindow.SignalName.DialogueEnded, new Callable(this, MethodName.OnDialogueEnded)))
-				{
-					_dialogueWindow.DialogueEnded -= OnDialogueEnded;
-				}
+				_dialogueWindow.DialogueEnded -= OnDialogueEnded;
+				_dialogueWindow.DialogueActionTriggered -= OnDialogueActionTriggered;
 			}
 			
 			// 发送结束信号（给外部监听者，如NPCInteraction）

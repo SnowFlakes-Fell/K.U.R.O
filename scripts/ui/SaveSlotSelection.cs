@@ -416,6 +416,12 @@ namespace Kuros.UI
 
         public override void _Input(InputEvent @event)
         {
+            // 只有在控件可见时才处理输入，避免隐藏的实例拦截 ESC 键
+            if (!IsVisibleInTree())
+            {
+                return;
+            }
+            
             if (@event.IsActionPressed("ui_cancel"))
             {
                 OnBackPressed();

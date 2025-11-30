@@ -576,11 +576,8 @@ namespace Kuros.UI
         {
             if (_player != null)
             {
-                // 检查是否已连接，然后断开连接
-                if (_player.IsConnected(SamplePlayer.SignalName.GoldChanged, new Callable(this, MethodName.OnPlayerGoldChanged)))
-                {
-                    _player.GoldChanged -= OnPlayerGoldChanged;
-                }
+                // 直接取消订阅（C# 中取消订阅不存在的处理器是安全的）
+                _player.GoldChanged -= OnPlayerGoldChanged;
                 _player = null;
             }
         }

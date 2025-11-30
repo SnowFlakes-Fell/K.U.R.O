@@ -384,7 +384,7 @@ namespace Kuros.Managers
             
             // 获取关卡名称
             string levelName = "未知关卡";
-            int level = 1;
+            int level = 1; // TODO: Derive actual level number from game state (e.g., from a LevelManager or scene progression system)
             string levelProgress = "未知";
             
             if (GetTree() != null)

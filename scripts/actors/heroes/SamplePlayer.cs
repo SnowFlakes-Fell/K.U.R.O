@@ -264,7 +264,7 @@ public partial class SamplePlayer : GameActor, IPlayerStatsSource
 		
 		if (battleHUD != null)
 		{
-			battleHUD.CallDeferred("UpdateHandSlotHighlight", LeftHandSlotIndex, 0);
+			battleHUD.CallDeferred(BattleHUD.MethodName.UpdateHandSlotHighlight, LeftHandSlotIndex, 0);
 		}
 	}
 	
