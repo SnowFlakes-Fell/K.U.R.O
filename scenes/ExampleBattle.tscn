@@ -172,7 +172,6 @@ script = ExtResource("20_spawn_controller")
 
 [node name="EnemyInstance" parent="EnemySpawnController" instance=ExtResource("21_enemy_b1_fat")]
 position = Vector2(1369, 456)
-DetectionRange = 200.0
 Speed = 50.0
 
 [node name="DroppableExample" parent="." instance=ExtResource("11_drop_example")]

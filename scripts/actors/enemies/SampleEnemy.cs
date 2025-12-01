@@ -5,13 +5,16 @@ using Kuros.Utils;
 
 public partial class SampleEnemy : GameActor
 {
-    [Export] public float DetectionRange = 300.0f;
+    [ExportCategory("Detection")]
+    [Export] public Area2D? DetectionArea { get; private set; }
+    
+    [ExportCategory("Attack")]
+    [Export] public Area2D? AttackArea { get; private set; }
+    
+    [ExportCategory("Score")]
     [Export] public int ScoreValue = 10;
     
-    [Export] public Area2D AttackArea { get; private set; } = null!;
-    
     private SamplePlayer? _player;
-    private const float FALLBACK_ATTACK_RANGE = 80.0f;
     
     public SampleEnemy()
     {
@@ -25,32 +28,34 @@ public partial class SampleEnemy : GameActor
     {
         base._Ready();
         
-        // Try to find AttackArea if not assigned
+        // Try to find areas if not assigned
         if (AttackArea == null) AttackArea = GetNodeOrNull<Area2D>("AttackArea");
+        if (DetectionArea == null) DetectionArea = GetNodeOrNull<Area2D>("DetectionArea");
         
         RefreshPlayerReference();
     }
     
     public SamplePlayer? PlayerTarget => _player;
     
-    public bool IsPlayerWithinDetectionRange(float extraMargin = 0.0f)
+    /// <summary>
+    /// 检查玩家是否在检测范围内。使用 DetectionArea 碰撞检测。
+    /// </summary>
+    public bool IsPlayerWithinDetectionRange()
     {
         RefreshPlayerReference();
-        if (_player == null) return false;
-        float limit = DetectionRange + extraMargin;
-        return _player.GlobalPosition.DistanceTo(GlobalPosition) <= limit;
+        if (_player == null || DetectionArea == null) return false;
+        return DetectionArea.OverlapsBody(_player);
     }
     
+    /// <summary>
+    /// 检查玩家是否在攻击范围内。使用 AttackArea 碰撞检测。
+    /// </summary>
     public bool IsPlayerInAttackRange()
-        {
+    {
         RefreshPlayerReference();
-        if (_player == null) return false;
-            if (AttackArea != null)
-            {
-            return AttackArea.OverlapsBody(_player);
-                }
-        return _player.GlobalPosition.DistanceTo(GlobalPosition) <= FALLBACK_ATTACK_RANGE + 10.0f;
-            }
+        if (_player == null || AttackArea == null) return false;
+        return AttackArea.OverlapsBody(_player);
+    }
 
     public Vector2 GetDirectionToPlayer()
     {
