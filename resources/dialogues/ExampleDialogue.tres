@@ -40,3 +40,4 @@ StartEntryIndex = 0
 CanSkip = true
 Entries = [SubResource("DialogueEntry_1"), SubResource("DialogueEntry_2"), SubResource("DialogueEntry_3")]
 
+

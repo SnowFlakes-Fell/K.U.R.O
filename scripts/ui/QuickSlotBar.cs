@@ -8,6 +8,8 @@ namespace Kuros.UI
 {
 	/// <summary>
 	/// 简单的物品快捷栏，展示背包前几格物品。
+	/// 注意：此组件已废弃，默认为静默状态（不显示）。
+	/// 快捷栏功能已移至 BattleHUD 中的 QuickBarPanel。
 	/// </summary>
 	public partial class QuickSlotBar : HBoxContainer
 	{
@@ -19,6 +21,12 @@ namespace Kuros.UI
 		[Export] public Color SelectedBorderColor { get; set; } = new Color(1, 0, 0, 1);
 		[Export] public Color UnselectedSlotColor { get; set; } = new Color(0.85f, 0.85f, 0.85f, 1);
 		[Export] public Color UnselectedBorderColor { get; set; } = new Color(0, 0, 0, 0.2f);
+		
+		/// <summary>
+		/// 是否启用此组件（默认为 false，即静默状态）
+		/// 设为 true 可启用旧版快捷栏显示
+		/// </summary>
+		[Export] public bool EnableQuickSlotBar { get; set; } = true;
 
 		private PlayerInventoryComponent? _inventory;
 		private InventoryContainer? _backpack;
@@ -44,6 +52,14 @@ namespace Kuros.UI
 
 		public override void _Ready()
 		{
+			// 默认静默状态：隐藏此组件
+			if (!EnableQuickSlotBar)
+			{
+				Visible = false;
+				SetProcess(false);
+				return;
+			}
+			
 			_inventory = ResolveInventoryComponent();
 			if (_inventory == null)
 			{

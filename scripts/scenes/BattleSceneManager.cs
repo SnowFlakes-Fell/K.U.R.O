@@ -272,12 +272,11 @@ namespace Kuros.Scenes
 			}
 			else
 			{
-				// 尝试在常见路径中查找
-				string[] possiblePaths = {
-					$"res://data/{weaponName}.tres",
-					$"res://resources/items/{weaponName}.tres",
-					$"res://data/DefaultSwordItem.tres" // 默认武器
-				};
+			// 尝试在常见路径中查找
+			string[] possiblePaths = {
+				$"res://resources/items/{weaponName}.tres",
+				$"res://resources/items/DefaultSwordItem.tres" // 默认武器
+			};
 
 				foreach (var path in possiblePaths)
 				{

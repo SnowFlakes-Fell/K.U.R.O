@@ -451,8 +451,20 @@ namespace Kuros.UI
                 return;
             }
             
+            // 检查是否为ESC键（同时检查action和keycode，确保可靠捕获）
+            bool isEscKey = false;
             if (@event.IsActionPressed("ui_cancel"))
             {
+                isEscKey = true;
+            }
+            else if (@event is InputEventKey keyEvent && keyEvent.Pressed && keyEvent.Keycode == Key.Escape)
+            {
+                isEscKey = true;
+            }
+
+            if (isEscKey)
+            {
+                GD.Print("SaveSlotSelection._Input: ESC键关闭存档选择界面");
                 OnBackPressed();
                 GetViewport().SetInputAsHandled();
             }

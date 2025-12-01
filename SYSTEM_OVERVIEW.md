@@ -47,7 +47,7 @@
   - 地图物品：`WorldItemEntity` 挂在 tscn 中，`TryTransferToActor()` 只会把物品写入玩家当前选中栏位（若不可用则直接拒绝），随后触发 `PlayerInventoryComponent.ItemPicked` 并按 `ItemDefinition.EffectEntries` 应用拾取效果。  
   - 快捷键：`PlayerItemInteractionComponent` 监听 `put_down` / `throw`，仅当当前栏位存在物品时才会通过 `WorldItemSpawner` 生成实体；`item_select_left` / `item_select_right` 循环调整指针但不会移动物品。  
   - 骨骼绑定：`PlayerItemAttachment` 订阅 `ItemPicked`/`ItemRemoved` 以及 `ActiveBackpackSlotChanged`，始终展示当前指针对应物品，放下/投掷时自动清除。  
-  - 快捷栏：`QuickSlotBar` 订阅 `InventoryContainer.InventoryChanged` 以及 `ActiveBackpackSlotChanged`，只显示有限数量槽位，并通过标题/红色边框高亮当前指针。
+  - 快捷栏：`BattleHUD` 中的 `QuickBarPanel` 订阅 `InventoryContainer.SlotChanged` 以及 `InventoryChanged`，显示5个快捷槽位，支持图标和名称显示，通过边框颜色高亮左右手选中物品（黄色=右手固定武器，蓝色=左手选中物品）。
 - 拾取/投掷动画链路：  
   - `PlayerItemInteractionComponent` 会在 `take_up` 输入时切入 `PlayerPickUpState`，播放 `animations/pickup`（Spine/AnimationPlayer），动画结束后才实际执行拾取。  
   - 投掷流程同理：按下 `throw` 时先切换到 `PlayerThrowState` 播放投掷动画，动画完成后 `TryTriggerThrowAfterAnimation()` 生成并抛出物品。
