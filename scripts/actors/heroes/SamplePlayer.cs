@@ -363,8 +363,9 @@ public partial class SamplePlayer : GameActor, IPlayerStatsSource
 		// 重要：只在 LeftHandSlotIndex 无效时才初始化，避免覆盖用户已选择的其他快捷栏
 		if (LeftHandSlotIndex < 1 || LeftHandSlotIndex > 4)
 		{
+			int previousIndex = LeftHandSlotIndex;
 			SwitchToQuickBarSlot(1);
-			GD.Print($"SamplePlayer: Initialized left hand selection to quickbar slot 2 (index 1). Previous LeftHandSlotIndex: {LeftHandSlotIndex}");
+			GD.Print($"SamplePlayer: Initialized left hand selection to quickbar slot 2 (index 1). Previous LeftHandSlotIndex: {previousIndex}");
 		}
 		else
 		{
