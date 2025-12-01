@@ -333,7 +333,7 @@ namespace Kuros.UI
             var data = GetSaveSlotData(slotIndex);
             if (data.HasSave)
             {
-                if (LocationImage != null && data.LocationImage != null)
+                if (LocationImage != null)
                 {
                     LocationImage.Texture = data.LocationImage;
                 }
