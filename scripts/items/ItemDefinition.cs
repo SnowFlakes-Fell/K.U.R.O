@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Godot;
 using Kuros.Items.Attributes;
 using Kuros.Items.Effects;
+using Kuros.Items.Weapons;
 
 namespace Kuros.Items
 {
@@ -50,10 +51,18 @@ namespace Kuros.Items
             set => _effectEntries = value ?? new();
         }
 
+        [ExportGroup("Weapon")]
+        [Export] public Godot.Collections.Array<Resource> WeaponSkillResources
+        {
+            get => _weaponSkillResources;
+            set => _weaponSkillResources = value ?? new();
+        }
+
         private Godot.Collections.Array<string> _tags = new();
         private HashSet<string>? _tagCache;
         private Godot.Collections.Array<ItemAttributeEntry> _attributeEntries = new();
         private Godot.Collections.Array<ItemEffectEntry> _effectEntries = new();
+        private Godot.Collections.Array<Resource> _weaponSkillResources = new();
         private ItemAttributeSet? _attributeCache;
 
         private const string DefaultWorldSceneDirectory = "res://scenes/properties/";
@@ -117,6 +126,17 @@ namespace Kuros.Items
                 if (entry == null || entry.EffectScene == null) continue;
                 if (entry.Trigger != trigger) continue;
                 yield return entry;
+            }
+        }
+
+        public IEnumerable<WeaponSkillDefinition> GetWeaponSkillDefinitions()
+        {
+            foreach (var skillResource in _weaponSkillResources)
+            {
+                if (skillResource is WeaponSkillDefinition skill)
+                {
+                    yield return skill;
+                }
             }
         }
 
