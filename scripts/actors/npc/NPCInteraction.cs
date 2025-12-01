@@ -244,7 +244,7 @@ namespace Kuros.Actors.NPC
 				// 创建选项
 				var choice1 = new DialogueChoice();
 				choice1.Text = "了解更多信息";
-				choice1.NextEntryIndex = 2;
+				choice1.NextEntryIndex = 1;
 				choice1.OnSelectedAction = "";
 				
 				var choice2 = new DialogueChoice();
@@ -258,7 +258,8 @@ namespace Kuros.Actors.NPC
 				var entry2 = new DialogueEntry();
 				entry2.SpeakerName = "村民";
 				entry2.Text = "如果你需要帮助，随时可以来找我。\n我会告诉你一些有用的信息。";
-				entry2.AutoAdvance = false;
+				entry2.AutoAdvance = true;
+				entry2.NextEntryIndex = 2;
 				
 				// 创建第三个对话条目
 				var entry3 = new DialogueEntry();

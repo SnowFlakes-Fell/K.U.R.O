@@ -209,7 +209,7 @@ namespace Kuros.Actors.Heroes
             }
             else
             {
-                GameLogger.Warn(nameof(PlayerItemInteractionComponent), "StateMachine 中未找到 'PickUp' 狀態，直接執行拾取邏輯。");
+                GameLogger.Warn(nameof(PlayerItemInteractionComponent), "StateMachine 中未找到 'PickUp' 状态，直接执行拾取逻辑。");
                 TryHandlePickup();
             }
         }

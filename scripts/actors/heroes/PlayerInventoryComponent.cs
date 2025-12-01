@@ -18,9 +18,6 @@ namespace Kuros.Actors.Heroes
         public InventoryContainer Backpack { get; private set; } = null!;
         public InventoryContainer? QuickBar { get; set; }
 
-        // 空白道具资源缓存
-        private ItemDefinition? _emptyItem;
-
         // 跟踪已获得的物品ID（用于判断是否是第一次获得）
         private HashSet<string> _obtainedItemIds = new HashSet<string>();
 
@@ -54,28 +51,9 @@ namespace Kuros.Actors.Heroes
             Backpack.SlotCount = BackpackSlots;
             Backpack.InventoryChanged += OnBackpackInventoryChanged;
 
-            // 加载空白道具资源
-            _emptyItem = GD.Load<ItemDefinition>("res://data/EmptyItem.tres");
-            if (_emptyItem == null)
-            {
-                GameLogger.Warn(nameof(PlayerInventoryComponent), "Failed to load EmptyItem.tres");
-            }
-
             // 初始化特殊槽位
             InitializeSpecialSlots();
             InitializeSelection();
-        }
-
-        /// <summary>
-        /// 获取空白道具实例
-        /// </summary>
-        private ItemDefinition? GetEmptyItem()
-        {
-            if (_emptyItem == null)
-            {
-                _emptyItem = GD.Load<ItemDefinition>("res://data/EmptyItem.tres");
-            }
-            return _emptyItem;
         }
 
         private InventoryContainer CreateBackpack()

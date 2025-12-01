@@ -403,6 +403,7 @@ namespace Kuros.UI
                             var oldCard = _slotCards[i];
                             if (oldCard != null && IsInstanceValid(oldCard))
                             {
+                                // 舊卡片有效：先獲取索引，移除舊卡片，再添加並移動新卡片
                                 var index = oldCard.GetIndex();
                                 SlotGrid.RemoveChild(oldCard);
                                 oldCard.QueueFree();
@@ -411,7 +412,15 @@ namespace Kuros.UI
                             }
                             else
                             {
+                                // 舊卡片無效：直接添加新卡片並移動到正確位置
+                                // 使用循環索引 i 作為目標位置（假設卡片按順序排列）
                                 SlotGrid.AddChild(newCard);
+                                // 確保索引在有效範圍內
+                                int targetIndex = Mathf.Min(i, SlotGrid.GetChildCount() - 1);
+                                if (targetIndex >= 0)
+                                {
+                                    SlotGrid.MoveChild(newCard, targetIndex);
+                                }
                             }
                             _slotCards[i] = newCard;
                         }

@@ -177,10 +177,10 @@ namespace Kuros.UI
 			};
 			AddChild(_quickBarContainer);
 
-			// 连接快捷栏变化信号（确保不重复连接）
-			// 注意：使用 Callable 方式检查连接，因为信号可能已经被连接
-			_quickBarContainer.SlotChanged += OnQuickBarSlotChanged;
-			_quickBarContainer.InventoryChanged += OnQuickBarChanged;
+		// 连接快捷栏变化信号
+		// 注意：_quickBarContainer 在此方法中刚刚创建，且 _Ready() 只调用一次，因此无需检查重复订阅
+		_quickBarContainer.SlotChanged += OnQuickBarSlotChanged;
+		_quickBarContainer.InventoryChanged += OnQuickBarChanged;
 
 			// 在快捷栏1（索引0）放置默认小木剑占位符
 			ItemDefinition? swordItem = DefaultSwordItem;
@@ -390,10 +390,11 @@ namespace Kuros.UI
 				
 				// 初始化左手选择（只在还没有选中时才初始化，避免覆盖用户选择）
 				// 注意：使用 CallDeferred 确保在快捷栏连接完成后再初始化
-				player.CallDeferred("InitializeLeftHandSelection");
+				player.CallDeferred(SamplePlayer.MethodName.InitializeLeftHandSelection);
 				
 				// 延迟更新高亮，确保初始化完成后再显示
-				CallDeferred(MethodName.UpdateHandSlotHighlight, player.LeftHandSlotIndex >= 1 && player.LeftHandSlotIndex < 5 ? player.LeftHandSlotIndex : 1, 0);
+				int clampedIndex = Mathf.Clamp(player.LeftHandSlotIndex, 1, 4);
+				CallDeferred(MethodName.UpdateHandSlotHighlight, clampedIndex, 0);
 			}
 			else
 			{

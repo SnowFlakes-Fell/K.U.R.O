@@ -131,196 +131,226 @@ public partial class DroppableExampleProperty : DroppablePickupProperty
     {
         base.OnPutDown(actor);
 
-        if (_sprite != null)
-        {
-            _sprite.Modulate = _initialColor;
-        }
-
-        if (_energyGranted)
-        {
-            GD.Print($"{Name} put down by {actor.Name}. Energy effect removed.");
-            _energyGranted = false;
-        }
+        ResetSpriteColor();
+        ClearEnergyEffect(actor);
 
         // 从玩家物品栏中移除当前选中槽位的物品
         // 关键修复：应该从当前选中的快捷栏槽位获取物品，而不是使用Item属性
         if (actor is SamplePlayer player)
         {
-            int removed = 0;
-            ItemDefinition? itemToRemove = null;
-            int quantityToRemove = 1;
-            
-            // 记录所有快捷栏槽位的状态，用于调试
-            if (player.InventoryComponent?.QuickBar != null)
+            HandleItemRemoval(player);
+            RefreshBattleHUD(player);
+        }
+    }
+
+    /// <summary>
+    /// 重置精灵颜色到初始状态
+    /// </summary>
+    private void ResetSpriteColor()
+    {
+        if (_sprite != null)
+        {
+            _sprite.Modulate = _initialColor;
+        }
+    }
+
+    /// <summary>
+    /// 清除能量效果并记录日志
+    /// </summary>
+    private void ClearEnergyEffect(GameActor actor)
+    {
+        if (_energyGranted)
+        {
+            GD.Print($"{Name} put down by {actor.Name}. Energy effect removed.");
+            _energyGranted = false;
+        }
+    }
+
+    /// <summary>
+    /// 处理物品移除逻辑：从快捷栏和背包中移除物品
+    /// </summary>
+    private void HandleItemRemoval(SamplePlayer player)
+    {
+        int removed = 0;
+        ItemDefinition? itemToRemove = null;
+        int quantityToRemove = 1;
+        
+        // 记录所有快捷栏槽位的状态，用于调试
+        if (player.InventoryComponent?.QuickBar != null)
+        {
+            GD.Print($"DroppableExampleProperty.OnPutDown: QuickBar status before removal:");
+            for (int i = 0; i < 5; i++)
             {
-                GD.Print($"DroppableExampleProperty.OnPutDown: QuickBar status before removal:");
-                for (int i = 0; i < 5; i++)
-                {
-                    var debugStack = player.InventoryComponent.QuickBar.GetStack(i);
-                    GD.Print($"  Slot {i}: {(debugStack != null && !debugStack.IsEmpty ? $"{debugStack.Item.DisplayName} x{debugStack.Quantity}" : "empty")}");
-                }
+                var debugStack = player.InventoryComponent.QuickBar.GetStack(i);
+                GD.Print($"  Slot {i}: {(debugStack != null && !debugStack.IsEmpty ? $"{debugStack.Item.DisplayName} x{debugStack.Quantity}" : "empty")}");
             }
+        }
+        
+        // 关键修复：从当前选中槽位获取物品，而不是使用Item属性
+        if (player.LeftHandSlotIndex >= 1 && player.LeftHandSlotIndex < 5 && player.InventoryComponent?.QuickBar != null)
+        {
+            var selectedStack = player.InventoryComponent.QuickBar.GetStack(player.LeftHandSlotIndex);
+            if (selectedStack != null && !selectedStack.IsEmpty && selectedStack.Item.ItemId != "empty_item")
+            {
+                itemToRemove = selectedStack.Item;
+                quantityToRemove = selectedStack.Quantity;
+                GD.Print($"DroppableExampleProperty.OnPutDown: Selected slot {player.LeftHandSlotIndex} has {quantityToRemove} x {itemToRemove.DisplayName} (ItemId: {itemToRemove.ItemId})");
+            }
+        }
+        
+        // 如果没有选中槽位或选中槽位为空，直接返回
+        if (itemToRemove == null)
+        {
+            GD.Print($"DroppableExampleProperty.OnPutDown: No valid item to remove from selected slot {player.LeftHandSlotIndex}");
             
-            // 关键修复：从当前选中槽位获取物品，而不是使用Item属性
+            // 如果选中的是空白道具，创建不透明度为0的实例
             if (player.LeftHandSlotIndex >= 1 && player.LeftHandSlotIndex < 5 && player.InventoryComponent?.QuickBar != null)
             {
-                var selectedStack = player.InventoryComponent.QuickBar.GetStack(player.LeftHandSlotIndex);
-                if (selectedStack != null && !selectedStack.IsEmpty && selectedStack.Item.ItemId != "empty_item")
+                var stack = player.InventoryComponent.QuickBar.GetStack(player.LeftHandSlotIndex);
+                if (stack != null && !stack.IsEmpty && stack.Item.ItemId == "empty_item")
                 {
-                    itemToRemove = selectedStack.Item;
-                    quantityToRemove = selectedStack.Quantity;
-                    GD.Print($"DroppableExampleProperty.OnPutDown: Selected slot {player.LeftHandSlotIndex} has {quantityToRemove} x {itemToRemove.DisplayName} (ItemId: {itemToRemove.ItemId})");
+                    CreateEmptyItemInstance(player);
                 }
             }
-            
-            // 如果没有选中槽位或选中槽位为空，直接返回
-            if (itemToRemove == null)
+            return;
+        }
+        
+        // 检查物品栏是否有对应物品（排除空白道具）
+        bool backpackEmpty = true;
+        if (player.InventoryComponent?.Backpack != null)
+        {
+            for (int i = 0; i < player.InventoryComponent.Backpack.Slots.Count; i++)
             {
-                GD.Print($"DroppableExampleProperty.OnPutDown: No valid item to remove from selected slot {player.LeftHandSlotIndex}");
-                
-                // 如果选中的是空白道具，创建不透明度为0的实例
-                if (player.LeftHandSlotIndex >= 1 && player.LeftHandSlotIndex < 5 && player.InventoryComponent?.QuickBar != null)
+                var backpackStack = player.InventoryComponent.Backpack.GetStack(i);
+                if (backpackStack != null && !backpackStack.IsEmpty && 
+                    backpackStack.Item.ItemId != "empty_item" && 
+                    backpackStack.Item.ItemId == itemToRemove.ItemId)
                 {
-                    var stack = player.InventoryComponent.QuickBar.GetStack(player.LeftHandSlotIndex);
-                    if (stack != null && !stack.IsEmpty && stack.Item.ItemId == "empty_item")
-                    {
-                        CreateEmptyItemInstance(player);
-                    }
-                }
-                return;
-            }
-            
-            // 检查物品栏是否有对应物品（排除空白道具）
-            bool backpackEmpty = true;
-            if (player.InventoryComponent?.Backpack != null)
-            {
-                for (int i = 0; i < player.InventoryComponent.Backpack.Slots.Count; i++)
-                {
-                    var backpackStack = player.InventoryComponent.Backpack.GetStack(i);
-                    if (backpackStack != null && !backpackStack.IsEmpty && 
-                        backpackStack.Item.ItemId != "empty_item" && 
-                        backpackStack.Item.ItemId == itemToRemove.ItemId)
-                    {
-                        backpackEmpty = false;
-                        break;
-                    }
+                    backpackEmpty = false;
+                    break;
                 }
             }
+        }
+        
+        // 从选中槽位移除物品
+        if (player.InventoryComponent?.QuickBar != null)
+        {
+            removed = player.InventoryComponent.QuickBar.RemoveItemFromSlot(player.LeftHandSlotIndex, quantityToRemove);
+            GD.Print($"DroppableExampleProperty.OnPutDown: Removed {removed} x {itemToRemove.DisplayName} from selected quickbar slot {player.LeftHandSlotIndex}");
             
-            // 从选中槽位移除物品
-            if (player.InventoryComponent?.QuickBar != null)
+            // 立即同步左手物品（在添加空白道具之前，确保左手物品先清除）
+            // 这样可以避免信号处理顺序问题
+            GD.Print($"DroppableExampleProperty.OnPutDown: Syncing left hand item after removal");
+            player.SyncLeftHandItemFromSlot();
+            player.UpdateHandItemVisual();
+            
+            // 如果选中的槽位物品被完全移除，添加空白道具
+            var updatedStack = player.InventoryComponent.QuickBar.GetStack(player.LeftHandSlotIndex);
+            if (updatedStack == null || updatedStack.IsEmpty)
             {
-                removed = player.InventoryComponent.QuickBar.RemoveItemFromSlot(player.LeftHandSlotIndex, quantityToRemove);
-                GD.Print($"DroppableExampleProperty.OnPutDown: Removed {removed} x {itemToRemove.DisplayName} from selected quickbar slot {player.LeftHandSlotIndex}");
-                
-                // 立即同步左手物品（在添加空白道具之前，确保左手物品先清除）
-                // 这样可以避免信号处理顺序问题
-                GD.Print($"DroppableExampleProperty.OnPutDown: Syncing left hand item after removal");
-                player.SyncLeftHandItemFromSlot();
-                player.UpdateHandItemVisual();
-                
-                // 如果选中的槽位物品被完全移除，添加空白道具
-                var updatedStack = player.InventoryComponent.QuickBar.GetStack(player.LeftHandSlotIndex);
-                if (updatedStack == null || updatedStack.IsEmpty)
+                // 添加空白道具（这会触发SlotChanged信号，但我们已经同步过了）
+                var emptyItem = GD.Load<ItemDefinition>("res://data/EmptyItem.tres");
+                if (emptyItem != null && player.InventoryComponent?.QuickBar != null)
                 {
-                    // 添加空白道具（这会触发SlotChanged信号，但我们已经同步过了）
-                    var emptyItem = GD.Load<ItemDefinition>("res://data/EmptyItem.tres");
-                    if (emptyItem != null && player.InventoryComponent?.QuickBar != null)
-                    {
-                        player.InventoryComponent.QuickBar.TryAddItemToSlot(emptyItem, 1, player.LeftHandSlotIndex);
-                        GD.Print($"DroppableExampleProperty.OnPutDown: Added empty item to slot {player.LeftHandSlotIndex}");
-                        // 添加空白道具后再次同步，确保状态正确
-                        // 虽然SlotChanged信号也会触发同步，但这里确保立即执行
-                        player.SyncLeftHandItemFromSlot();
-                        player.UpdateHandItemVisual();
-                    }
+                    player.InventoryComponent.QuickBar.TryAddItemToSlot(emptyItem, 1, player.LeftHandSlotIndex);
+                    GD.Print($"DroppableExampleProperty.OnPutDown: Added empty item to slot {player.LeftHandSlotIndex}");
+                    // 添加空白道具后再次同步，确保状态正确
+                    // 虽然SlotChanged信号也会触发同步，但这里确保立即执行
+                    player.SyncLeftHandItemFromSlot();
+                    player.UpdateHandItemVisual();
                 }
             }
-            
-            // 如果从选中槽位没有移除足够的物品，尝试从物品栏移除
-            if (removed < quantityToRemove && !backpackEmpty && player.InventoryComponent?.Backpack != null)
+        }
+        
+        // 如果从选中槽位没有移除足够的物品，尝试从物品栏移除
+        if (removed < quantityToRemove && !backpackEmpty && player.InventoryComponent?.Backpack != null)
+        {
+            int remaining = quantityToRemove - removed;
+            // 找到物品栏中对应物品的槽位并移除
+            for (int i = 0; i < player.InventoryComponent.Backpack.Slots.Count && remaining > 0; i++)
             {
-                int remaining = quantityToRemove - removed;
-                // 找到物品栏中对应物品的槽位并移除
-                for (int i = 0; i < player.InventoryComponent.Backpack.Slots.Count && remaining > 0; i++)
+                var backpackStack = player.InventoryComponent.Backpack.GetStack(i);
+                // 确保不是空白道具
+                if (backpackStack != null && !backpackStack.IsEmpty && 
+                    backpackStack.Item.ItemId != "empty_item" && 
+                    backpackStack.Item.ItemId == itemToRemove.ItemId)
                 {
-                    var backpackStack = player.InventoryComponent.Backpack.GetStack(i);
-                    // 确保不是空白道具
-                    if (backpackStack != null && !backpackStack.IsEmpty && 
-                        backpackStack.Item.ItemId != "empty_item" && 
-                        backpackStack.Item.ItemId == itemToRemove.ItemId)
+                    int removedFromSlot = player.InventoryComponent.Backpack.RemoveItemFromSlot(i, remaining);
+                    removed += removedFromSlot;
+                    remaining -= removedFromSlot;
+                    GD.Print($"DroppableExampleProperty.OnPutDown: Removed {removedFromSlot} x {itemToRemove.DisplayName} from backpack slot {i}");
+                    
+                    // 如果槽位被清空，添加空白道具
+                    var updatedBackpackStack = player.InventoryComponent.Backpack.GetStack(i);
+                    if (updatedBackpackStack == null || updatedBackpackStack.IsEmpty)
                     {
-                        int removedFromSlot = player.InventoryComponent.Backpack.RemoveItemFromSlot(i, remaining);
-                        removed += removedFromSlot;
-                        remaining -= removedFromSlot;
-                        GD.Print($"DroppableExampleProperty.OnPutDown: Removed {removedFromSlot} x {itemToRemove.DisplayName} from backpack slot {i}");
-                        
-                        // 如果槽位被清空，添加空白道具
-                        var updatedStack = player.InventoryComponent.Backpack.GetStack(i);
-                        if (updatedStack == null || updatedStack.IsEmpty)
+                        var emptyItem = GD.Load<ItemDefinition>("res://data/EmptyItem.tres");
+                        if (emptyItem != null)
                         {
-                            var emptyItem = GD.Load<ItemDefinition>("res://data/EmptyItem.tres");
-                            if (emptyItem != null)
-                            {
-                                player.InventoryComponent.Backpack.TryAddItemToSlot(emptyItem, 1, i);
-                                GD.Print($"DroppableExampleProperty.OnPutDown: Added empty item to backpack slot {i}");
-                            }
+                            player.InventoryComponent.Backpack.TryAddItemToSlot(emptyItem, 1, i);
+                            GD.Print($"DroppableExampleProperty.OnPutDown: Added empty item to backpack slot {i}");
                         }
                     }
                 }
             }
-            
-            // 注意：不再从其他快捷栏槽位移除，只从选中槽位和物品栏移除
-            // 这样可以确保g键只放下当前选中的物品
-            
-            // 记录移除后的快捷栏状态，用于调试
-            if (removed > 0 && player.InventoryComponent?.QuickBar != null)
+        }
+        
+        // 注意：不再从其他快捷栏槽位移除，只从选中槽位和物品栏移除
+        // 这样可以确保g键只放下当前选中的物品
+        
+        // 记录移除后的快捷栏状态，用于调试
+        if (removed > 0 && player.InventoryComponent?.QuickBar != null)
+        {
+            GD.Print($"DroppableExampleProperty.OnPutDown: QuickBar status after removal:");
+            for (int i = 0; i < 5; i++)
             {
-                GD.Print($"DroppableExampleProperty.OnPutDown: QuickBar status after removal:");
-                for (int i = 0; i < 5; i++)
-                {
-                    var debugStack = player.InventoryComponent.QuickBar.GetStack(i);
-                    GD.Print($"  Slot {i}: {(debugStack != null && !debugStack.IsEmpty ? $"{debugStack.Item.DisplayName} x{debugStack.Quantity}" : "empty")}");
-                }
+                var debugStack = player.InventoryComponent.QuickBar.GetStack(i);
+                GD.Print($"  Slot {i}: {(debugStack != null && !debugStack.IsEmpty ? $"{debugStack.Item.DisplayName} x{debugStack.Quantity}" : "empty")}");
             }
-            
-            // 无论是否移除物品，都要刷新快捷栏显示（因为添加空白道具也会改变显示）
-            // 这样可以确保所有槽位的显示都是最新的
-            BattleHUD? battleHUD = null;
-            if (UIManager.Instance != null)
-            {
-                battleHUD = UIManager.Instance.GetUI<BattleHUD>("BattleHUD");
-            }
-            
-            if (battleHUD == null)
-            {
-                // 备用方案：通过场景树查找
-                battleHUD = GetTree().GetFirstNodeInGroup("ui") as BattleHUD;
-            }
-            
-            if (battleHUD != null)
-            {
-                GD.Print("DroppableExampleProperty.OnPutDown: Found BattleHUD, requesting quickbar refresh");
-                // 更新所有快捷栏槽位的显示
-                battleHUD.CallDeferred("UpdateQuickBarDisplay");
-                // 保持当前的左手选择状态（如果还有的话）
-                int leftHandSlot = player.LeftHandSlotIndex >= 1 && player.LeftHandSlotIndex < 5 ? player.LeftHandSlotIndex : -1;
-                battleHUD.CallDeferred("UpdateHandSlotHighlight", leftHandSlot, 0);
-            }
-            else
-            {
-                GD.PrintErr("DroppableExampleProperty.OnPutDown: Could not find BattleHUD to refresh quickbar");
-            }
-            
-            if (removed > 0 && itemToRemove != null)
-            {
-                GD.Print($"DroppableExampleProperty.OnPutDown: Successfully removed {removed} x {itemToRemove.DisplayName} from inventory");
-            }
-            else if (itemToRemove != null)
-            {
-                // 如果没有移除任何物品，打印错误（这种情况不应该发生，因为上面已经检查过了）
-                GD.PrintErr($"DroppableExampleProperty.OnPutDown: ERROR - No items removed (Item: {itemToRemove.DisplayName}, Quantity: {quantityToRemove}). This should not happen.");
-            }
+        }
+        
+        if (removed > 0 && itemToRemove != null)
+        {
+            GD.Print($"DroppableExampleProperty.OnPutDown: Successfully removed {removed} x {itemToRemove.DisplayName} from inventory");
+        }
+        else if (itemToRemove != null)
+        {
+            // 如果没有移除任何物品，打印错误（这种情况不应该发生，因为上面已经检查过了）
+            GD.PrintErr($"DroppableExampleProperty.OnPutDown: ERROR - No items removed (Item: {itemToRemove.DisplayName}, Quantity: {quantityToRemove}). This should not happen.");
+        }
+    }
+
+    /// <summary>
+    /// 刷新 BattleHUD 显示：更新快捷栏和手部槽位高亮
+    /// </summary>
+    private void RefreshBattleHUD(SamplePlayer player)
+    {
+        // 无论是否移除物品，都要刷新快捷栏显示（因为添加空白道具也会改变显示）
+        // 这样可以确保所有槽位的显示都是最新的
+        BattleHUD? battleHUD = null;
+        if (UIManager.Instance != null)
+        {
+            battleHUD = UIManager.Instance.GetUI<BattleHUD>("BattleHUD");
+        }
+        
+        if (battleHUD == null)
+        {
+            // 备用方案：通过场景树查找
+            battleHUD = GetTree().GetFirstNodeInGroup("ui") as BattleHUD;
+        }
+        
+        if (battleHUD != null)
+        {
+            GD.Print("DroppableExampleProperty.OnPutDown: Found BattleHUD, requesting quickbar refresh");
+            // 更新所有快捷栏槽位的显示
+            battleHUD.CallDeferred("UpdateQuickBarDisplay");
+            // 保持当前的左手选择状态（如果还有的话）
+            int leftHandSlot = player.LeftHandSlotIndex >= 1 && player.LeftHandSlotIndex < 5 ? player.LeftHandSlotIndex : -1;
+            battleHUD.CallDeferred("UpdateHandSlotHighlight", leftHandSlot, 0);
+        }
+        else
+        {
+            GD.PrintErr("DroppableExampleProperty.OnPutDown: Could not find BattleHUD to refresh quickbar");
         }
     }
 

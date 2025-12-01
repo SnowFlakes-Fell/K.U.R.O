@@ -39,27 +39,40 @@ namespace Kuros.Managers
 
 		/// <summary>
 		/// 取消暂停请求（减少暂停计数）
-		/// 使用原子操作确保线程安全，并防止计数器变为负数
+		/// 使用原子CAS循环确保线程安全，并防止计数器变为负数
 		/// </summary>
 		public void PopPause()
 		{
-			int newValue = Interlocked.Decrement(ref _pauseCount);
+			int currentValue;
+			int newValue;
 			
-			// 如果计数器变为负数，重置为零
-			if (newValue < 0)
+			// 使用CAS循环原子地执行"递减并钳制到零"操作
+			do
 			{
-				Interlocked.Exchange(ref _pauseCount, 0);
-				newValue = 0;
+				currentValue = Volatile.Read(ref _pauseCount);
+				newValue = currentValue > 0 ? currentValue - 1 : 0;
 			}
+			while (Interlocked.CompareExchange(ref _pauseCount, newValue, currentValue) != currentValue);
 			
 			UpdatePauseState(newValue);
 		}
 
 		/// <summary>
 		/// 更新实际的暂停状态
+		/// 使用CallDeferred确保SceneTree操作在主线程执行
 		/// </summary>
 		/// <param name="pauseCount">当前的暂停计数值（用于避免重复读取）</param>
 		private void UpdatePauseState(int pauseCount)
+		{
+			// 将暂停状态更新推迟到主线程执行
+			CallDeferred(nameof(SetPauseStateDeferred), pauseCount > 0);
+		}
+
+		/// <summary>
+		/// 在主线程上设置暂停状态
+		/// 此方法只应通过CallDeferred调用
+		/// </summary>
+		private void SetPauseStateDeferred(bool shouldPause)
 		{
 			if (_tree == null)
 			{
@@ -68,7 +81,7 @@ namespace Kuros.Managers
 
 			if (_tree != null)
 			{
-				_tree.Paused = pauseCount > 0;
+				_tree.Paused = shouldPause;
 			}
 		}
 

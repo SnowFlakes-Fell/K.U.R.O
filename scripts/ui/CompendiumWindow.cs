@@ -147,11 +147,14 @@ namespace Kuros.UI
             if (!Visible)
             {
                 SetProcessInput(false);
+                SetProcessUnhandledInput(false);
                 return;
             }
 
             Visible = false;
+            ProcessMode = ProcessModeEnum.Inherit;
             SetProcessInput(false);
+            SetProcessUnhandledInput(false);
             EmitSignal(SignalName.CompendiumClosed);
         }
 
@@ -327,7 +330,6 @@ namespace Kuros.UI
                     GD.Print("CompendiumWindow._Input: 清除选中条目");
                     ClearSelectedEntry();
                     GetViewport().SetInputAsHandled();
-                    AcceptEvent();
                     return;
                 }
 
@@ -340,7 +342,6 @@ namespace Kuros.UI
                     GD.Print($"CompendiumWindow._Input: 切换到上一个标签页，从{currentTab}到{newTab}");
                     Tabs.CurrentTab = newTab;
                     GetViewport().SetInputAsHandled();
-                    AcceptEvent();
                 }
                 else
                 {
@@ -348,7 +349,6 @@ namespace Kuros.UI
                     GD.Print("CompendiumWindow._Input: 关闭图鉴窗口");
                     HideWindow();
                     GetViewport().SetInputAsHandled();
-                    AcceptEvent();
                 }
             }
         }
