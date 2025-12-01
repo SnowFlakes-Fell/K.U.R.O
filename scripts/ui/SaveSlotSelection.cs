@@ -396,6 +396,26 @@ namespace Kuros.UI
                     GD.PushWarning($"SaveSlotSelection: 槽位 {i} 的卡片无效，重新创建");
                     if (SlotGrid != null)
                     {
+                        // 清理先前無效的 _slotCards[i] 引用及 SlotGrid 中的無效子節點
+                        if (_slotCards[i] != null && !IsInstanceValid(_slotCards[i]))
+                        {
+                            var invalidRef = _slotCards[i];
+                            var children = SlotGrid.GetChildren();
+                            foreach (var child in children)
+                            {
+                                // 移除無效子節點或與無效引用相同的子節點
+                                if (!IsInstanceValid(child) || child == invalidRef)
+                                {
+                                    SlotGrid.RemoveChild(child);
+                                    if (IsInstanceValid(child))
+                                    {
+                                        child.QueueFree();
+                                    }
+                                }
+                            }
+                            _slotCards[i] = null!;
+                        }
+                        
                         var newCard = CreateSaveSlotCard(i);
                         if (newCard != null)
                         {
