@@ -133,6 +133,9 @@ namespace Kuros.Managers
                 return false;
             }
 
+            // 确保存档数据包含正确的槽位索引
+            data.SlotIndex = slotIndex;
+
             // 保存数据为JSON格式，包含版本号以支持未来迁移
             var savePayload = new Godot.Collections.Dictionary<string, Variant>
             {
@@ -449,7 +452,7 @@ namespace Kuros.Managers
             
             return new GameSaveData
             {
-                SlotIndex = -1, // 将在保存时设置
+                SlotIndex = -1, // 占位符，SaveGame() 会在序列化前设置正确的槽位索引
                 SaveTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 PlayTimeSeconds = _totalPlayTimeSeconds,
                 Level = level,
