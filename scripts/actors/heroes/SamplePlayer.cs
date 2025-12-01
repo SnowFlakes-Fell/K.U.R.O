@@ -343,6 +343,7 @@ public partial class SamplePlayer : GameActor, IPlayerStatsSource
 	{
 		LastMovementStateName = stateName;
 	}
+
 	
 	// Override FlipFacing to handle AttackArea flipping correctly when turning
 	public override void FlipFacing(bool faceRight)
@@ -381,113 +382,113 @@ public partial class SamplePlayer : GameActor, IPlayerStatsSource
 		if (AttackArea != null)
 		{
 			// REMOVED: Manual Position flipping here. It's now handled in FlipFacing or via Scene Hierarchy.
-            
-            var bodies = AttackArea.GetOverlappingBodies();
-            foreach (var body in bodies)
-            {
-                if (body is SampleEnemy enemy)
-                {
-                    enemy.TakeDamage((int)AttackDamage);
-                    hitCount++;
-                    GameLogger.Info(nameof(SamplePlayer), $"Hit enemy: {enemy.Name}");
-                }
-            }
-        }
-        else
-        {
-            GameLogger.Error(nameof(SamplePlayer), "AttackArea is missing! Assign it in Inspector.");
-        }
-        
-        if (hitCount == 0)
-        {
-            GameLogger.Info(nameof(SamplePlayer), "No enemies hit!");
-        }
-    }
-    
-    public override void TakeDamage(int damage)
-    {
+			
+			var bodies = AttackArea.GetOverlappingBodies();
+			foreach (var body in bodies)
+			{
+				if (body is SampleEnemy enemy)
+				{
+					enemy.TakeDamage((int)AttackDamage);
+					hitCount++;
+					GameLogger.Info(nameof(SamplePlayer), $"Hit enemy: {enemy.Name}");
+				}
+			}
+		}
+		else
+		{
+			GameLogger.Error(nameof(SamplePlayer), "AttackArea is missing! Assign it in Inspector.");
+		}
+		
+		if (hitCount == 0)
+		{
+			GameLogger.Info(nameof(SamplePlayer), "No enemies hit!");
+		}
+	}
+	
+	public override void TakeDamage(int damage)
+	{
 		_pendingAttackSourceState = string.Empty;
-        base.TakeDamage(damage);
-        UpdateStatsUI();
-    }
-    
-    public void AddScore(int points)
-    {
-        _score += points;
-        UpdateStatsUI();
-    }
-    
-    /// <summary>
-    /// 获取当前金币数量
-    /// </summary>
-    public int GetGold()
-    {
-        return _gold;
-    }
-    
-    /// <summary>
-    /// 添加金币到玩家的金币总量。
-    /// </summary>
-    /// <param name="amount">要添加的金币数量，必须为非负数。</param>
-    /// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 为负数时抛出。</exception>
-    /// <remarks>
-    /// 若需要扣除金币，请使用 <see cref="TrySpendGold"/> 方法，
-    /// 该方法会检查金币是否足够并安全地扣除。
-    /// </remarks>
-    public void AddGold(int amount)
-    {
-        if (amount < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), amount,
-                "金币数量不能为负数。若需扣除金币，请使用 TrySpendGold 方法。");
-        }
-        
-        _gold += amount;
-        EmitSignal(SignalName.GoldChanged, _gold);
-    }
-    
-    /// <summary>
-    /// 设置金币数量
-    /// </summary>
-    public void SetGold(int amount)
-    {
-        _gold = Mathf.Max(0, amount);
-        EmitSignal(SignalName.GoldChanged, _gold);
-    }
-    
-    /// <summary>
-    /// 尝试消费金币（如果金币足够）
-    /// </summary>
-    public bool TrySpendGold(int amount)
-    {
-        if (_gold >= amount)
-        {
-            _gold -= amount;
-            EmitSignal(SignalName.GoldChanged, _gold);
-            return true;
-        }
-        return false;
-    }
-    
-    private void UpdateStatsUI()
-    {
+		base.TakeDamage(damage);
+		UpdateStatsUI();
+	}
+	
+	public void AddScore(int points)
+	{
+		_score += points;
+		UpdateStatsUI();
+	}
+	
+	/// <summary>
+	/// 获取当前金币数量
+	/// </summary>
+	public int GetGold()
+	{
+		return _gold;
+	}
+	
+	/// <summary>
+	/// 添加金币到玩家的金币总量。
+	/// </summary>
+	/// <param name="amount">要添加的金币数量，必须为非负数。</param>
+	/// <exception cref="ArgumentOutOfRangeException">当 <paramref name="amount"/> 为负数时抛出。</exception>
+	/// <remarks>
+	/// 若需要扣除金币，请使用 <see cref="TrySpendGold"/> 方法，
+	/// 该方法会检查金币是否足够并安全地扣除。
+	/// </remarks>
+	public void AddGold(int amount)
+	{
+		if (amount < 0)
+		{
+			throw new ArgumentOutOfRangeException(nameof(amount), amount,
+				"金币数量不能为负数。若需扣除金币，请使用 TrySpendGold 方法。");
+		}
+		
+		_gold += amount;
+		EmitSignal(SignalName.GoldChanged, _gold);
+	}
+	
+	/// <summary>
+	/// 设置金币数量
+	/// </summary>
+	public void SetGold(int amount)
+	{
+		_gold = Mathf.Max(0, amount);
+		EmitSignal(SignalName.GoldChanged, _gold);
+	}
+	
+	/// <summary>
+	/// 尝试消费金币（如果金币足够）
+	/// </summary>
+	public bool TrySpendGold(int amount)
+	{
+		if (_gold >= amount)
+		{
+			_gold -= amount;
+			EmitSignal(SignalName.GoldChanged, _gold);
+			return true;
+		}
+		return false;
+	}
+	
+	private void UpdateStatsUI()
+	{
 		NotifyStatsListeners();
 
-        if (StatsLabel != null)
-        {
-            StatsLabel.Text = $"Player HP: {CurrentHealth}\nScore: {_score}";
-        }
-    }
+		if (StatsLabel != null)
+		{
+			StatsLabel.Text = $"Player HP: {CurrentHealth}\nScore: {_score}";
+		}
+	}
 
 	private void NotifyStatsListeners()
 	{
 		StatsUpdated?.Invoke(CurrentHealth, MaxHealth, _score);
 	}
-    
-    protected override void OnDeathFinalized()
-    {
-        EffectController?.ClearAll();
-        GameLogger.Warn(nameof(SamplePlayer), "Player died! Game Over!");
-        GetTree().ReloadCurrentScene();
-    }
+	
+	protected override void OnDeathFinalized()
+	{
+		EffectController?.ClearAll();
+		GameLogger.Warn(nameof(SamplePlayer), "Player died! Game Over!");
+		GetTree().ReloadCurrentScene();
+	}
 }

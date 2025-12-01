@@ -13,7 +13,7 @@ namespace Kuros.Actors.Heroes
     public partial class PlayerInventoryComponent : Node
     {
         [Export(PropertyHint.Range, "1,200,1")]
-        public int BackpackSlots { get; set; } = 24;
+        public int BackpackSlots { get; set; } = 4;
 
         public InventoryContainer Backpack { get; private set; } = null!;
         public InventoryContainer? QuickBar { get; set; }

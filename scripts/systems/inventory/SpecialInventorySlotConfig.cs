@@ -30,6 +30,7 @@ namespace Kuros.Systems.Inventory
                 AllowedTags = new Godot.Collections.Array<string> { ItemTagIds.Weapon }
             };
         }
+
     }
 }
 
