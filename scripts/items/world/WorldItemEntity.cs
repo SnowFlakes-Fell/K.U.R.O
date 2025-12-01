@@ -140,6 +140,9 @@ namespace Kuros.Items.World
             ItemDefinition = stack.Item;
             Quantity = stack.Quantity;
             CurrentStack = new InventoryItemStack(stack.Item, stack.Quantity);
+            
+            // 更新 Sprite 貼圖為物品圖標
+            UpdateSpriteFromItemDefinition();
         }
 
         public void InitializeFromItem(ItemDefinition definition, int quantity)
@@ -150,6 +153,28 @@ namespace Kuros.Items.World
             ItemDefinition = definition;
             Quantity = quantity;
             CurrentStack = new InventoryItemStack(definition, quantity);
+            
+            // 更新 Sprite 貼圖為物品圖標
+            UpdateSpriteFromItemDefinition();
+        }
+
+        /// <summary>
+        /// 更新 Sprite2D 的貼圖為當前物品的圖標
+        /// </summary>
+        private void UpdateSpriteFromItemDefinition()
+        {
+            if (ItemDefinition?.Icon == null)
+            {
+                return;
+            }
+
+            var sprite = GetNodeOrNull<Sprite2D>("Sprite2D");
+            if (sprite != null)
+            {
+                sprite.Texture = ItemDefinition.Icon;
+                // 重置縮放以確保圖標以原始大小顯示
+                sprite.Scale = Vector2.One;
+            }
         }
 
         public void ApplyThrowImpulse(Vector2 velocity)
@@ -161,14 +186,16 @@ namespace Kuros.Items.World
         /// <summary>
         /// 供外部调用的拾取方法（如状态机或其他组件触发）
         /// </summary>
-        public bool TryPickupByActor(GameActor actor)
+        /// <param name="actor">拾取物品的角色</param>
+        /// <param name="pickupToBackpack">如果为 true，物品将直接放入物品栏而非左手</param>
+        public bool TryPickupByActor(GameActor actor, bool pickupToBackpack = false)
         {
             if (_isPicked)
             {
                 return false;
             }
 
-            if (!TryTransferToActor(actor))
+            if (!TryTransferToActor(actor, pickupToBackpack))
             {
                 return false;
             }
@@ -245,7 +272,24 @@ namespace Kuros.Items.World
 
         private void HandlePickupRequest(GameActor actor)
         {
-            if (!TryPickupByActor(actor))
+            // 检查左手是否有物品，决定是否放入物品栏
+            bool pickupToBackpack = false;
+            if (actor is SamplePlayer player && player.LeftHandSlotIndex >= 1 && player.LeftHandSlotIndex <= 4)
+            {
+                var inventory = ResolveInventoryComponent(actor);
+                if (inventory?.QuickBar != null)
+                {
+                    var stack = inventory.QuickBar.GetStack(player.LeftHandSlotIndex);
+                    // 检查槽位是否有有效物品（排除空白道具）
+                    if (stack != null && !stack.IsEmpty && stack.Item.ItemId != "empty_item")
+                    {
+                        pickupToBackpack = true;
+                        GD.Print("[WorldItemEntity] 左手已有物品，将拾取到物品栏");
+                    }
+                }
+            }
+            
+            if (!TryPickupByActor(actor, pickupToBackpack))
             {
                 EmitSignal(SignalName.ItemTransferFailed, this, actor);
             }
@@ -301,7 +345,7 @@ namespace Kuros.Items.World
             CurrentStack = new InventoryItemStack(definition, Quantity);
         }
 
-        private bool TryTransferToActor(GameActor actor)
+        private bool TryTransferToActor(GameActor actor, bool pickupToBackpack = false)
         {
             var stack = CurrentStack;
             if (stack == null)
@@ -316,11 +360,53 @@ namespace Kuros.Items.World
                 return false;
             }
 
-            // 使用选中槽位添加物品
-            int accepted = inventory.TryAddItemToSelectedSlot(stack.Item, stack.Quantity);
+            int accepted = 0;
+            
+            // 如果指定直接放入物品栏，使用 AddItemSmart 方法
+            if (pickupToBackpack)
+            {
+                GD.Print($"[拾取] 左手已有物品，将 {stack.Item.DisplayName} 放入物品栏");
+                accepted = inventory.AddItemSmart(stack.Item, stack.Quantity, showPopupIfFirstTime: true);
+                if (accepted > 0)
+                {
+                    GD.Print($"[拾取] {accepted} x {ItemId} -> 快捷栏/物品栏");
+                }
+            }
+            else
+            {
+                // 优先将物品添加到快捷栏的左手槽位
+                if (actor is SamplePlayer player && player.LeftHandSlotIndex >= 1 && player.LeftHandSlotIndex <= 4 && inventory.QuickBar != null)
+                {
+                    // 尝试将物品添加到左手选中的快捷栏槽位
+                    accepted = inventory.QuickBar.TryAddItemToSlot(stack.Item, stack.Quantity, player.LeftHandSlotIndex);
+                    if (accepted > 0)
+                    {
+                        GD.Print($"[拾取] {accepted} x {ItemId} -> 左手槽位 {player.LeftHandSlotIndex + 1}");
+                        GameLogger.Info(nameof(WorldItemEntity), $"{actor.Name} 将 {accepted} 个 {ItemId} 拾取到左手快捷栏槽位 {player.LeftHandSlotIndex + 1}。");
+                        inventory.NotifyItemPicked(stack.Item);
+                        // 同步更新左手物品显示
+                        player.SyncLeftHandItemFromSlot();
+                        player.UpdateHandItemVisual();
+                    }
+                }
+                
+                // 如果左手槽位无法接收（或未设置），使用 AddItemSmart 智能分配
+                if (accepted <= 0)
+                {
+                    GD.Print($"[拾取] 左手槽位无法接收，使用智能分配");
+                    accepted = inventory.AddItemSmart(stack.Item, stack.Quantity, showPopupIfFirstTime: true);
+                    if (accepted <= 0)
+                    {
+                        GameLogger.Info(nameof(WorldItemEntity), $"Actor {actor.Name} 无法拾取 {ItemId}，所有槽位都已满。");
+                        return false;
+                    }
+                    GD.Print($"[拾取] {accepted} x {ItemId} -> 快捷栏/物品栏");
+                }
+            }
+
             if (accepted <= 0)
             {
-                GameLogger.Info(nameof(WorldItemEntity), $"Actor {actor.Name} 的当前选中栏位无法拾取 {ItemId}。");
+                GameLogger.Info(nameof(WorldItemEntity), $"Actor {actor.Name} 无法拾取 {ItemId}，物品栏可能已满。");
                 return false;
             }
 

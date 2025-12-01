@@ -73,7 +73,6 @@ namespace Kuros.Actors.Heroes
         public void SetQuickBar(InventoryContainer quickBar)
         {
             QuickBar = quickBar;
-            GD.Print($"PlayerInventoryComponent: QuickBar has been set. QuickBar is {(quickBar != null ? "valid" : "null")}");
         }
 
         /// <summary>
@@ -170,12 +169,43 @@ namespace Kuros.Actors.Heroes
                 GD.PrintErr($"AddItemSmart: QuickBar is null! Item will only be added to backpack.");
             }
 
-            // 剩余物品放入物品栏（会自动替换空白道具）
-            if (remaining > 0)
+            // 剩余物品放入物品栏
+            if (remaining > 0 && Backpack != null)
             {
                 GD.Print($"AddItemSmart: Adding {remaining} remaining items to backpack");
-                int addedToBackpack = Backpack.AddItem(item, remaining);
-                remaining -= addedToBackpack;
+                
+                // 首先尝试合并到已有相同物品的槽位
+                for (int i = 0; i < Backpack.Slots.Count && remaining > 0; i++)
+                {
+                    var existingStack = Backpack.GetStack(i);
+                    if (existingStack != null && !existingStack.IsEmpty && 
+                        existingStack.Item.ItemId == item.ItemId && !existingStack.IsFull)
+                    {
+                        int added = Backpack.TryAddItemToSlot(item, remaining, i);
+                        if (added > 0)
+                        {
+                            GD.Print($"AddItemSmart: Merged {added} x {item.DisplayName} into backpack slot {i}");
+                            remaining -= added;
+                        }
+                    }
+                }
+                
+                // 然后尝试放入空槽位或空白道具槽位
+                for (int i = 0; i < Backpack.Slots.Count && remaining > 0; i++)
+                {
+                    var existingStack = Backpack.GetStack(i);
+                    // 检查槽位是否为空或包含空白道具
+                    if (existingStack == null || existingStack.IsEmpty || 
+                        (existingStack.Item.ItemId == "empty_item"))
+                    {
+                        int added = Backpack.TryAddItemToSlot(item, remaining, i);
+                        if (added > 0)
+                        {
+                            GD.Print($"AddItemSmart: Added {added} x {item.DisplayName} to backpack slot {i} (replaced empty item if present)");
+                            remaining -= added;
+                        }
+                    }
+                }
             }
 
             int totalAdded = amount - remaining;

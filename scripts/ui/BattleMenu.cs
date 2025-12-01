@@ -37,6 +37,8 @@ namespace Kuros.UI
         private InventoryWindow? _cachedInventoryWindow;
         private CompendiumWindow? _cachedCompendiumWindow;
         private SkillDetailWindow? _cachedSkillDetailWindow;
+        private SettingsMenu? _cachedSettingsMenu;
+        private SaveSlotSelection? _cachedSaveSlotSelection;
 
         public bool IsOpen => _isOpen;
 
@@ -109,6 +111,26 @@ namespace Kuros.UI
                     // 物品获得弹窗打开时，ESC键被完全禁用，这里不处理
                     GD.Print("BattleMenu._Input: 物品获得弹窗打开，ESC键被禁用，不处理");
                     return; // 不处理，也不调用SetInputAsHandled，让弹窗处理（禁用）
+                }
+                
+                // 检查设置菜单是否打开
+                bool settingsOpen = IsSettingsMenuOpen();
+                
+                if (settingsOpen)
+                {
+                    // 设置菜单打开时，ESC键会被设置菜单处理，这里不处理
+                    GD.Print("BattleMenu._Input: 设置菜单打开，ESC键由设置菜单处理，不拦截");
+                    return; // 不处理，也不调用SetInputAsHandled，让设置菜单处理
+                }
+                
+                // 检查存档选择界面是否打开
+                bool saveSlotOpen = IsSaveSlotSelectionOpen();
+                
+                if (saveSlotOpen)
+                {
+                    // 存档选择界面打开时，ESC键会被存档选择界面处理，这里不处理
+                    GD.Print("BattleMenu._Input: 存档选择界面打开，ESC键由存档选择界面处理，不拦截");
+                    return; // 不处理，也不调用SetInputAsHandled，让存档选择界面处理
                 }
                 
                 // 检查物品栏是否打开
@@ -269,6 +291,48 @@ namespace Kuros.UI
             }
             
             GD.Print("BattleMenu.IsSkillDetailWindowOpen: 未找到打开的技能详情窗口");
+            return false;
+        }
+
+        /// <summary>
+        /// 检查设置菜单是否打开（使用缓存）
+        /// </summary>
+        private bool IsSettingsMenuOpen()
+        {
+            // 如果缓存无效，尝试从UIManager获取
+            if (_cachedSettingsMenu == null || !IsInstanceValid(_cachedSettingsMenu))
+            {
+                _cachedSettingsMenu = UIManager.Instance?.GetUI<SettingsMenu>("SettingsMenu");
+            }
+
+            if (_cachedSettingsMenu != null && _cachedSettingsMenu.Visible)
+            {
+                GD.Print($"BattleMenu.IsSettingsMenuOpen: 找到打开的设置菜单，Visible={_cachedSettingsMenu.Visible}");
+                return true;
+            }
+            
+            GD.Print("BattleMenu.IsSettingsMenuOpen: 未找到打开的设置菜单");
+            return false;
+        }
+
+        /// <summary>
+        /// 检查存档选择界面是否打开（使用缓存）
+        /// </summary>
+        private bool IsSaveSlotSelectionOpen()
+        {
+            // 如果缓存无效，尝试从UIManager获取
+            if (_cachedSaveSlotSelection == null || !IsInstanceValid(_cachedSaveSlotSelection))
+            {
+                _cachedSaveSlotSelection = UIManager.Instance?.GetUI<SaveSlotSelection>("SaveSlotSelection");
+            }
+
+            if (_cachedSaveSlotSelection != null && _cachedSaveSlotSelection.Visible)
+            {
+                GD.Print($"BattleMenu.IsSaveSlotSelectionOpen: 找到打开的存档选择界面，Visible={_cachedSaveSlotSelection.Visible}");
+                return true;
+            }
+            
+            GD.Print("BattleMenu.IsSaveSlotSelectionOpen: 未找到打开的存档选择界面");
             return false;
         }
 

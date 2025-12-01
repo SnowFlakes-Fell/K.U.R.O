@@ -57,76 +57,87 @@ public partial class DroppableExampleProperty : DroppablePickupProperty
     {
         base.OnPicked(actor);
 
-        if (_sprite != null)
-        {
-            _sprite.Modulate = PickedColor;
-        }
-
         // 應用治療效果
         ApplyHealEffect(actor);
 
         // 如果设置了物品，添加到玩家物品栏
         if (actor is SamplePlayer player)
         {
-            GD.Print($"DroppableExampleProperty.OnPicked: Actor is SamplePlayer, Item is {(Item != null ? Item.DisplayName : "null")}");
-            
-            if (Item != null)
+            if (Item != null && player.InventoryComponent != null)
             {
-                GD.Print($"DroppableExampleProperty: Adding {ItemQuantity} x {Item.DisplayName} to inventory");
+                int added = 0;
                 
-                if (player.InventoryComponent != null)
+                // 如果指定直接放入物品栏（左手已有物品），使用智能分配
+                if (PickupToBackpack)
                 {
-                    GD.Print($"DroppableExampleProperty: InventoryComponent found, QuickBar is {(player.InventoryComponent.QuickBar != null ? "set" : "null")}");
-                    
-                    int added = player.InventoryComponent.AddItemSmart(Item, ItemQuantity);
+                    GD.Print($"[拾取] 左手已有物品，将 {Item.DisplayName} 放入快捷栏/物品栏");
+                    added = player.InventoryComponent.AddItemSmart(Item, ItemQuantity);
                     if (added > 0)
                     {
-                        GD.Print($"DroppableExampleProperty: Successfully added {added} x {Item.DisplayName} to inventory");
-                        
-                        // 强制刷新快捷栏显示（通过BattleHUD）
-                        // 优先通过 UIManager 获取，如果失败则尝试通过场景树查找
-                        BattleHUD? battleHUD = null;
-                        if (UIManager.Instance != null)
-                        {
-                            battleHUD = UIManager.Instance.GetUI<BattleHUD>("BattleHUD");
-                        }
-                        
-                        if (battleHUD == null)
-                        {
-                            // 备用方案：通过场景树查找
-                            battleHUD = GetTree().GetFirstNodeInGroup("ui") as BattleHUD;
-                        }
-                        
-                        if (battleHUD != null)
-                        {
-                            GD.Print("DroppableExampleProperty: Found BattleHUD, requesting quickbar refresh");
-                            battleHUD.CallDeferred("UpdateQuickBarDisplay");
-                        }
-                        else
-                        {
-                            GD.PrintErr("DroppableExampleProperty: Could not find BattleHUD to refresh quickbar");
-                        }
-                    }
-                    else
-                    {
-                        GD.PrintErr($"DroppableExampleProperty: Failed to add {Item.DisplayName} to inventory - added: {added}");
+                        GD.Print($"[拾取] {added} x {Item.DisplayName} -> 快捷栏/物品栏");
                     }
                 }
-                else
+                // 如果是F键手动拾取且左手为空，优先放入左手槽位
+                else if (IsManualPickup && player.LeftHandSlotIndex >= 1 && player.LeftHandSlotIndex <= 4 && player.InventoryComponent.QuickBar != null)
                 {
-                    GD.PrintErr($"DroppableExampleProperty: Player {player.Name} has no InventoryComponent");
+                    added = player.InventoryComponent.QuickBar.TryAddItemToSlot(Item, ItemQuantity, player.LeftHandSlotIndex);
+                    if (added > 0)
+                    {
+                        GD.Print($"[拾取] {added} x {Item.DisplayName} -> 左手槽位 {player.LeftHandSlotIndex + 1}");
+                        player.InventoryComponent.NotifyItemPicked(Item);
+                        // 同步更新左手物品显示
+                        player.SyncLeftHandItemFromSlot();
+                        player.UpdateHandItemVisual();
+                    }
+                }
+                
+                // 如果左手槽位无法接收（或不是手动拾取），使用智能分配
+                if (added <= 0)
+                {
+                    GD.Print($"[拾取] 左手槽位无法接收，使用智能分配");
+                    added = player.InventoryComponent.AddItemSmart(Item, ItemQuantity);
+                    if (added > 0)
+                    {
+                        GD.Print($"[拾取] {added} x {Item.DisplayName} -> 快捷栏/物品栏");
+                    }
+                }
+                
+                if (added > 0)
+                {
+                    // 强制刷新快捷栏显示
+                    BattleHUD? battleHUD = UIManager.Instance?.GetUI<BattleHUD>("BattleHUD");
+                    battleHUD ??= GetTree().GetFirstNodeInGroup("ui") as BattleHUD;
+                    battleHUD?.CallDeferred("UpdateQuickBarDisplay");
+                    
+                    // 物品拾取成功，从场景中移除
+                    RemoveFromScene();
                 }
             }
-            else
+            else if (Item == null)
             {
-                GD.Print($"DroppableExampleProperty: Item is null, skipping inventory addition (this is normal if item is not set)");
-                GD.Print($"DroppableExampleProperty: 提示：请在编辑器中为 {Name} 节点设置 Item 属性");
+                // 没有物品定义，只是普通拾取（如治疗），也从场景移除
+                RemoveFromScene();
             }
         }
-        else
+    }
+    
+    /// <summary>
+    /// 从场景中移除此物品
+    /// </summary>
+    private void RemoveFromScene()
+    {
+        // 禁用触发区域
+        var triggerArea = GetNodeOrNull<Area2D>("TriggerArea");
+        if (triggerArea != null)
         {
-            GD.Print($"DroppableExampleProperty: Actor is not SamplePlayer: {actor?.GetType().Name}");
+            triggerArea.Monitoring = false;
+            triggerArea.Monitorable = false;
+            triggerArea.CollisionLayer = 0;
+            triggerArea.CollisionMask = 0;
         }
+        
+        // 从场景中移除节点
+        QueueFree();
     }
 
     protected override void OnPutDown(GameActor actor)
@@ -296,7 +307,7 @@ public partial class DroppableExampleProperty : DroppablePickupProperty
             if (updatedStack == null || updatedStack.IsEmpty)
             {
                 // 添加空白道具（这会触发SlotChanged信号，但我们已经同步过了）
-                var emptyItem = GD.Load<ItemDefinition>("res://data/EmptyItem.tres");
+                var emptyItem = GD.Load<ItemDefinition>("res://resources/items/EmptyItem.tres");
                 if (emptyItem != null && player.InventoryComponent?.QuickBar != null)
                 {
                     player.InventoryComponent.QuickBar.TryAddItemToSlot(emptyItem, 1, player.LeftHandSlotIndex);
@@ -331,7 +342,7 @@ public partial class DroppableExampleProperty : DroppablePickupProperty
                     var updatedBackpackStack = player.InventoryComponent.Backpack.GetStack(i);
                     if (updatedBackpackStack == null || updatedBackpackStack.IsEmpty)
                     {
-                        var emptyItem = GD.Load<ItemDefinition>("res://data/EmptyItem.tres");
+                        var emptyItem = GD.Load<ItemDefinition>("res://resources/items/EmptyItem.tres");
                         if (emptyItem != null)
                         {
                             player.InventoryComponent.Backpack.TryAddItemToSlot(emptyItem, 1, i);
@@ -423,7 +434,7 @@ public partial class DroppableExampleProperty : DroppablePickupProperty
         }
 
         // 设置物品为 EmptyItem
-        var emptyItem = GD.Load<ItemDefinition>("res://data/EmptyItem.tres");
+        var emptyItem = GD.Load<ItemDefinition>("res://resources/items/EmptyItem.tres");
         if (emptyItem != null)
         {
             itemInstance.Item = emptyItem;

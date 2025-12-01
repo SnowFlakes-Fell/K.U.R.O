@@ -20,10 +20,9 @@
 [ext_resource type="Script" uid="uid://bsa4kolrnan6p" path="res://scripts/actors/heroes/states/PlayerDyingState.cs" id="23_player_dying"]
 [ext_resource type="Script" uid="uid://cp40kowtn1ho3" path="res://scripts/actors/heroes/states/PlayerDeadState.cs" id="24_player_dead"]
 [ext_resource type="PackedScene" path="res://scenes/actors/npc/SimpleNPC.tscn" id="25_simple_npc"]
-[ext_resource type="Resource" path="res://data/TestItem2.tres" id="27_test_item_2"]
+[ext_resource type="Resource" path="res://resources/items/TestItem2.tres" id="27_test_item_2"]
 [ext_resource type="Script" uid="uid://6pyy6oo1abq7" path="res://scripts/actors/heroes/PlayerItemAttachment.cs" id="27_item_attachment"]
-[ext_resource type="Resource" path="res://data/TestItem3.tres" id="28_test_item_3"]
-[ext_resource type="Script" uid="uid://copvnatg446ec" path="res://scripts/ui/QuickSlotBar.cs" id="28_quick_slot_bar"]
+[ext_resource type="Resource" path="res://resources/items/TestItem3.tres" id="28_test_item_3"]
 [ext_resource type="Script" uid="uid://b0t8cfl3khjix" path="res://scripts/actors/heroes/PlayerItemInteractionComponent.cs" id="29_item_interaction"]
 [ext_resource type="Script" uid="uid://b8o8wks2ab8sm" path="res://scripts/actors/heroes/PlayerWeaponSkillController.cs" id="30_weapon_skill_controller"]
 [ext_resource type="Script" uid="uid://clkd1wiixwlbh" path="res://scripts/actors/heroes/states/PlayerPickUpState.cs" id="31_player_pickup"]
@@ -99,7 +98,7 @@ scale = Vector2(0.4285608, 0.48420432)
 position = Vector2(9.333557, -130.11035)
 scale = Vector2(2.3333912, 2.0652437)
 collision_layer = 0
-collision_mask = 2
+collision_mask = 6
 monitorable = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player/SpineCharacter/AttackArea"]
@@ -222,14 +221,6 @@ grow_horizontal = 2
 grow_vertical = 0
 text = "WASD: Move | Space: Attack | Shift: Run | F: Pick Up | G: Put Down"
 horizontal_alignment = 1
-
-[node name="QuickSlotBar" type="HBoxContainer" parent="UI"]
-offset_left = 20.0
-offset_top = 940.0
-offset_right = 300.0
-offset_bottom = 1020.0
-script = ExtResource("28_quick_slot_bar")
-InventoryPath = NodePath("../../Player/Inventory")
 
 [node name="ArillWall" type="StaticBody2D" parent="."]
 
