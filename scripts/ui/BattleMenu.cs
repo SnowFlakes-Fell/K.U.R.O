@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using Kuros.Managers;
 using Kuros.Utils;
@@ -40,6 +41,22 @@ namespace Kuros.UI
 
         public bool IsOpen => _isOpen;
 
+        /// <summary>
+        /// 使用 Godot 原生 Connect 方法连接按钮信号
+        /// 这种方式在导出版本中比 C# 委托方式更可靠
+        /// </summary>
+        private void ConnectButtonSignal(Button? button, string methodName)
+        {
+            if (button == null) return;
+            
+            // 使用 Godot 的 Connect 方法，这在导出版本中更可靠
+            var callable = new Callable(this, methodName);
+            if (!button.IsConnected(Button.SignalName.Pressed, callable))
+            {
+                button.Connect(Button.SignalName.Pressed, callable);
+            }
+        }
+
         public override void _Ready()
         {
             // 暂停时也要接收输入
@@ -54,21 +71,14 @@ namespace Kuros.UI
             QuitButton ??= GetNodeOrNull<Button>("Window/WindowMargin/WindowVBox/QuitButton");
             ExitButton ??= GetNodeOrNull<Button>("Window/WindowMargin/WindowVBox/ExitButton");
 
-            // 连接按钮信号
-            if (ResumeButton != null)
-                ResumeButton.Pressed += OnResumePressed;
-            if (SettingsButton != null)
-                SettingsButton.Pressed += OnSettingsPressed;
-            if (CompendiumButton != null)
-                CompendiumButton.Pressed += OnCompendiumPressed;
-            if (SaveButton != null)
-                SaveButton.Pressed += OnSavePressed;
-            if (LoadButton != null)
-                LoadButton.Pressed += OnLoadPressed;
-            if (QuitButton != null)
-                QuitButton.Pressed += OnQuitPressed;
-            if (ExitButton != null)
-                ExitButton.Pressed += OnExitGamePressed;
+            // 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
+            ConnectButtonSignal(ResumeButton, nameof(OnResumePressed));
+            ConnectButtonSignal(SettingsButton, nameof(OnSettingsPressed));
+            ConnectButtonSignal(CompendiumButton, nameof(OnCompendiumPressed));
+            ConnectButtonSignal(SaveButton, nameof(OnSavePressed));
+            ConnectButtonSignal(LoadButton, nameof(OnLoadPressed));
+            ConnectButtonSignal(QuitButton, nameof(OnQuitPressed));
+            ConnectButtonSignal(ExitButton, nameof(OnExitGamePressed));
 
             LoadCompendiumWindow();
 
@@ -186,19 +196,48 @@ namespace Kuros.UI
         {
             var result = new System.Collections.Generic.List<T>();
             
-            // 检查当前节点
-            if (root is T node)
+            if (root == null) return result;
+
+            // Check current node safely
+            try
             {
-                if (filter == null || filter(node))
+                if (root is T node)
                 {
-                    result.Add(node);
+                    if (filter == null || filter(node))
+                    {
+                        result.Add(node);
+                    }
                 }
             }
+            catch (Exception ex) 
+            { 
+                GD.Print($"FindAllNodesOfType: Type check error for {root.Name}: {ex.Message}");
+            }
             
-            // 递归检查子节点
-            foreach (Node child in root.GetChildren())
+            // Recursively check children safely
+            // Use index loop instead of foreach to catch exceptions per child fetch
+            int childCount = root.GetChildCount();
+            for (int i = 0; i < childCount; i++)
             {
-                result.AddRange(FindAllNodesOfType<T>(child, filter));
+                Node? child = null;
+                try
+                {
+                    child = root.GetChild(i);
+                }
+                catch
+                {
+                    // Failed to fetch child wrapper (e.g. SpineSprite without C# binding), skip it
+                    continue;
+                }
+
+                if (child != null)
+                {
+                    try
+                    {
+                        result.AddRange(FindAllNodesOfType<T>(child, filter));
+                    }
+                    catch { /* Ignore recursive errors */ }
+                }
             }
             
             return result;

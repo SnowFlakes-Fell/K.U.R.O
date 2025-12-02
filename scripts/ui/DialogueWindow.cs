@@ -64,6 +64,20 @@ namespace Kuros.UI
 			HideWindow();
 		}
 		
+		/// <summary>
+		/// 使用 Godot 原生 Connect 方法连接按钮信号
+		/// 这种方式在导出版本中比 C# 委托方式更可靠
+		/// </summary>
+		private void ConnectButtonSignal(Button? button, string methodName)
+		{
+			if (button == null) return;
+			var callable = new Callable(this, methodName);
+			if (!button.IsConnected(Button.SignalName.Pressed, callable))
+			{
+				button.Connect(Button.SignalName.Pressed, callable);
+			}
+		}
+
 		private void CacheNodeReferences()
 		{
 			MainPanel ??= GetNodeOrNull<Panel>("MainPanel");
@@ -83,11 +97,8 @@ namespace Kuros.UI
 			InstructionLabel ??= GetNodeOrNull<Label>("MainPanel/Footer/InstructionLabel");
 			GoldLabel ??= GetNodeOrNull<Label>("MainPanel/Header/GoldLabel");
 			
-			// 连接按钮信号
-			if (ContinueButton != null)
-			{
-				ContinueButton.Pressed += OnContinueButtonPressed;
-			}
+			// 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
+			ConnectButtonSignal(ContinueButton, nameof(OnContinueButtonPressed));
 		}
 		
 		private void InitializeUI()
@@ -285,7 +296,7 @@ namespace Kuros.UI
 		/// <summary>
 		/// 显示选项按钮
 		/// </summary>
-		private void ShowChoices(Godot.Collections.Array<DialogueChoice> choices)
+		private void ShowChoices(Godot.Collections.Array choices)
 		{
 			if (ChoicesContainer == null)
 			{
@@ -310,7 +321,7 @@ namespace Kuros.UI
 			// 创建选项按钮
 			for (int i = 0; i < choices.Count; i++)
 			{
-				var choice = choices[i];
+				var choice = choices[i].As<DialogueChoice>();
 				if (choice == null)
 				{
 					GD.PrintErr($"DialogueWindow: 选项 {i} 为空");
@@ -323,9 +334,15 @@ namespace Kuros.UI
 				button.CustomMinimumSize = new Vector2(400, 40);
 				button.ProcessMode = ProcessModeEnum.Always; // 确保在暂停时也能接收输入
 				
-				// 使用闭包捕获索引
+				// 将选项索引存储在按钮的元数据中，然后在回调中读取
 				int choiceIndex = i;
-				button.Pressed += () => OnChoiceSelected(choiceIndex);
+				button.SetMeta("choice_index", choiceIndex);
+				
+				// 使用 Callable.From 创建可调用对象
+				// 注意：这里捕获的是 choiceIndex 的值副本
+				var capturedIndex = choiceIndex;
+				var callable = Callable.From(() => OnChoiceSelected(capturedIndex));
+				button.Connect(Button.SignalName.Pressed, callable);
 				
 				ChoicesContainer.AddChild(button);
 				_choiceButtons.Add(button);
@@ -377,7 +394,7 @@ namespace Kuros.UI
 				return;
 			}
 			
-			var choice = _currentEntry.Choices[choiceIndex];
+			var choice = _currentEntry.Choices[choiceIndex].As<DialogueChoice>();
 			if (choice == null)
 			{
 				GD.PrintErr($"DialogueWindow: 选项 {choiceIndex} 为空");

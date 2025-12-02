@@ -82,8 +82,10 @@ namespace Kuros.Managers
 				if (existing is T typedNode)
 				{
 					// 如果是CanvasItem，设置可见性
-					// 但对于 InventoryWindow，不要自动显示（它有自己的显示/隐藏逻辑）
-					if (existing is CanvasItem existingCanvasItem && !(existing is InventoryWindow))
+					// 但对于以下类型，不要自动显示（它们有自己的显示/隐藏逻辑）：
+					// - InventoryWindow：物品栏窗口
+					// - BattleMenu：战斗菜单（暂停菜单）
+					if (existing is CanvasItem existingCanvasItem && !(existing is InventoryWindow) && !(existing is BattleMenu))
 					{
 						existingCanvasItem.Visible = true;
 					}
@@ -119,8 +121,10 @@ namespace Kuros.Managers
 			targetLayer.AddChild(uiNode);
 
 			// 确保UI节点是可见的（如果它是CanvasItem）
-			// 但对于 InventoryWindow，不要自动显示（它有自己的显示/隐藏逻辑）
-			if (uiNode is CanvasItem newCanvasItem && !(uiNode is InventoryWindow))
+			// 但对于以下类型，不要自动显示（它们有自己的显示/隐藏逻辑）：
+			// - InventoryWindow：物品栏窗口
+			// - BattleMenu：战斗菜单（暂停菜单）
+			if (uiNode is CanvasItem newCanvasItem && !(uiNode is InventoryWindow) && !(uiNode is BattleMenu))
 			{
 				newCanvasItem.Visible = true;
 			}

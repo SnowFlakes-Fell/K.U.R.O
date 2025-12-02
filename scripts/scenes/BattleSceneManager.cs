@@ -378,6 +378,20 @@ namespace Kuros.Scenes
 		}
 
 		/// <summary>
+		/// 使用 Godot 原生 Connect 方法连接信号
+		/// 这种方式在导出版本中比 C# 委托方式更可靠
+		/// </summary>
+		private void ConnectSignal(GodotObject source, StringName signalName, string methodName)
+		{
+			if (source == null) return;
+			var callable = new Callable(this, methodName);
+			if (!source.IsConnected(signalName, callable))
+			{
+				source.Connect(signalName, callable);
+			}
+		}
+
+		/// <summary>
 		/// 加载战斗菜单
 		/// </summary>
 		public void LoadMenu()
@@ -392,12 +406,12 @@ namespace Kuros.Scenes
 			
 			if (_battleMenu != null)
 			{
-				// 连接菜单信号
-				_battleMenu.ResumeRequested += OnMenuResume;
-				_battleMenu.QuitRequested += OnMenuQuit;
-				_battleMenu.SettingsRequested += OnMenuSettingsRequested;
-				_battleMenu.SaveRequested += OnMenuSaveRequested;
-				_battleMenu.LoadRequested += OnMenuLoadRequested;
+				// 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
+				ConnectSignal(_battleMenu, BattleMenu.SignalName.ResumeRequested, nameof(OnMenuResume));
+				ConnectSignal(_battleMenu, BattleMenu.SignalName.QuitRequested, nameof(OnMenuQuit));
+				ConnectSignal(_battleMenu, BattleMenu.SignalName.SettingsRequested, nameof(OnMenuSettingsRequested));
+				ConnectSignal(_battleMenu, BattleMenu.SignalName.SaveRequested, nameof(OnMenuSaveRequested));
+				ConnectSignal(_battleMenu, BattleMenu.SignalName.LoadRequested, nameof(OnMenuLoadRequested));
 			}
 		}
 

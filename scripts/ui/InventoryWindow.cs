@@ -76,6 +76,20 @@ namespace Kuros.UI
         }
 
 
+        /// <summary>
+        /// 使用 Godot 原生 Connect 方法连接按钮信号
+        /// 这种方式在导出版本中比 C# 委托方式更可靠
+        /// </summary>
+        private void ConnectButtonSignal(Button? button, string methodName)
+        {
+            if (button == null) return;
+            var callable = new Callable(this, methodName);
+            if (!button.IsConnected(Button.SignalName.Pressed, callable))
+            {
+                button.Connect(Button.SignalName.Pressed, callable);
+            }
+        }
+
         private void CacheNodeReferences()
         {
             CloseButton ??= GetNodeOrNull<Button>("MainPanel/Header/CloseButton");
@@ -84,21 +98,31 @@ namespace Kuros.UI
             TrashBin ??= GetNodeOrNull<Control>("MainPanel/Body/TrashBin");
             GoldLabel ??= GetNodeOrNull<Label>("MainPanel/Header/GoldLabel");
 
-            if (CloseButton != null)
-            {
-                CloseButton.Pressed += HideWindow;
-            }
+            // 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
+            ConnectButtonSignal(CloseButton, nameof(HideWindow));
 
             if (TrashBin != null)
             {
-                TrashBin.GuiInput += _OnTrashBinGuiInput;
+                var guiInputCallable = new Callable(this, nameof(_OnTrashBinGuiInput));
+                if (!TrashBin.IsConnected(Control.SignalName.GuiInput, guiInputCallable))
+                {
+                    TrashBin.Connect(Control.SignalName.GuiInput, guiInputCallable);
+                }
             }
 
             DeleteConfirmDialog ??= GetNodeOrNull<ConfirmationDialog>("DeleteConfirmDialog");
             if (DeleteConfirmDialog != null)
             {
-                DeleteConfirmDialog.Confirmed += OnDeleteConfirmed;
-                DeleteConfirmDialog.Canceled += OnDeleteCanceled;
+                var confirmedCallable = new Callable(this, nameof(OnDeleteConfirmed));
+                if (!DeleteConfirmDialog.IsConnected(ConfirmationDialog.SignalName.Confirmed, confirmedCallable))
+                {
+                    DeleteConfirmDialog.Connect(ConfirmationDialog.SignalName.Confirmed, confirmedCallable);
+                }
+                var canceledCallable = new Callable(this, nameof(OnDeleteCanceled));
+                if (!DeleteConfirmDialog.IsConnected(ConfirmationDialog.SignalName.Canceled, canceledCallable))
+                {
+                    DeleteConfirmDialog.Connect(ConfirmationDialog.SignalName.Canceled, canceledCallable);
+                }
             }
         }
 
