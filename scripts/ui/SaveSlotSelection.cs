@@ -48,6 +48,20 @@ namespace Kuros.UI
         private List<SaveSlotCard> _slotCards = new List<SaveSlotCard>();
         private int _selectedSlotIndex = -1;
 
+        /// <summary>
+        /// 使用 Godot 原生 Connect 方法连接按钮信号
+        /// 这种方式在导出版本中比 C# 委托方式更可靠
+        /// </summary>
+        private void ConnectButtonSignal(Button? button, string methodName)
+        {
+            if (button == null) return;
+            var callable = new Callable(this, methodName);
+            if (!button.IsConnected(Button.SignalName.Pressed, callable))
+            {
+                button.Connect(Button.SignalName.Pressed, callable);
+            }
+        }
+
         public override void _Ready()
         {
             // 确保在游戏暂停时也能接收输入
@@ -134,17 +148,9 @@ namespace Kuros.UI
                 SlotGrid.Columns = SlotsPerRow;
             }
 
-            // 连接返回按钮
-            if (BackButton != null)
-            {
-                BackButton.Pressed += OnBackPressed;
-            }
-
-            // 连接切换模式按钮
-            if (SwitchModeButton != null)
-            {
-                SwitchModeButton.Pressed += OnSwitchModePressed;
-            }
+            // 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
+            ConnectButtonSignal(BackButton, nameof(OnBackPressed));
+            ConnectButtonSignal(SwitchModeButton, nameof(OnSwitchModePressed));
 
             // 更新标题和按钮
             UpdateTitle();
@@ -518,9 +524,17 @@ namespace Kuros.UI
             // 确保按钮可以接收鼠标事件
             MouseFilter = Control.MouseFilterEnum.Stop;
             
-            // 连接信号
-            Pressed += OnPressed;
-            MouseEntered += OnMouseEntered;
+            // 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
+            var pressedCallable = new Callable(this, nameof(OnPressed));
+            if (!IsConnected(Button.SignalName.Pressed, pressedCallable))
+            {
+                Connect(Button.SignalName.Pressed, pressedCallable);
+            }
+            var mouseEnteredCallable = new Callable(this, nameof(OnMouseEntered));
+            if (!IsConnected(Control.SignalName.MouseEntered, mouseEnteredCallable))
+            {
+                Connect(Control.SignalName.MouseEntered, mouseEnteredCallable);
+            }
         }
 
         public override void _Ready()

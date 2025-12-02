@@ -240,7 +240,8 @@ namespace Kuros.Actors.NPC
 				choice2.NextEntryIndex = -1;
 				choice2.OnSelectedAction = "";
 				
-				entry1.Choices = new Godot.Collections.Array<DialogueChoice> { choice1, choice2 };
+				// 使用非泛型 Array 避免导出时的序列化问题
+				entry1.Choices = new Godot.Collections.Array { choice1, choice2 };
 				
 				// 创建第二个对话条目
 				var entry2 = new DialogueEntry();
@@ -255,8 +256,8 @@ namespace Kuros.Actors.NPC
 				entry3.Text = "这些怪物通常出现在村庄的东边。\n如果你要去那里，记得带上足够的装备。\n祝你好运！";
 				entry3.AutoAdvance = false;
 				
-				// 设置对话条目数组
-				dialogueData.Entries = new Godot.Collections.Array<DialogueEntry> { entry1, entry2, entry3 };
+				// 使用非泛型 Array 避免导出时的序列化问题
+				dialogueData.Entries = new Godot.Collections.Array { entry1, entry2, entry3 };
 				
 				DialogueData = dialogueData;
 			}

@@ -62,6 +62,20 @@ namespace Kuros.UI
             UpdateCooldowns((float)delta);
         }
 
+        /// <summary>
+        /// 使用 Godot 原生 Connect 方法连接按钮信号
+        /// 这种方式在导出版本中比 C# 委托方式更可靠
+        /// </summary>
+        private void ConnectButtonSignal(Button? button, string methodName)
+        {
+            if (button == null) return;
+            var callable = new Callable(this, methodName);
+            if (!button.IsConnected(Button.SignalName.Pressed, callable))
+            {
+                button.Connect(Button.SignalName.Pressed, callable);
+            }
+        }
+
         private void CacheNodeReferences()
         {
             CloseButton ??= GetNodeOrNull<Button>("MainPanel/Header/CloseButton");
@@ -71,15 +85,9 @@ namespace Kuros.UI
             PassiveSkillsTitle ??= GetNodeOrNull<Label>("MainPanel/Body/SkillsVBox/PassiveSkillsSection/PassiveSkillsTitle");
             DetailButton ??= GetNodeOrNull<Button>("MainPanel/Body/DetailButton");
 
-            if (CloseButton != null)
-            {
-                CloseButton.Pressed += HideWindow;
-            }
-
-            if (DetailButton != null)
-            {
-                DetailButton.Pressed += OnDetailButtonPressed;
-            }
+            // 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
+            ConnectButtonSignal(CloseButton, nameof(HideWindow));
+            ConnectButtonSignal(DetailButton, nameof(OnDetailButtonPressed));
         }
 
         /// <summary>

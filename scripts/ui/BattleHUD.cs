@@ -100,10 +100,14 @@ namespace Kuros.UI
 				PlayerMarker = GetNodeOrNull<ColorRect>("MinimapPanel/MinimapContainer/PlayerMarker");
 			}
 
-			// 连接暂停按钮信号
+			// 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
 			if (PauseButton != null)
 			{
-				PauseButton.Pressed += OnPauseButtonPressed;
+				var callable = new Callable(this, nameof(OnPauseButtonPressed));
+				if (!PauseButton.IsConnected(Button.SignalName.Pressed, callable))
+				{
+					PauseButton.Connect(Button.SignalName.Pressed, callable);
+				}
 			}
 
 			// 缓存快捷栏Label引用（必须在初始化物品栏之前）

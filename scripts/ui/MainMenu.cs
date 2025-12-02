@@ -28,6 +28,20 @@ namespace Kuros.UI
 		[Signal] public delegate void SettingsRequestedEventHandler();
 		[Signal] public delegate void QuitRequestedEventHandler();
 
+		/// <summary>
+		/// 使用 Godot 原生 Connect 方法连接按钮信号
+		/// 这种方式在导出版本中比 C# 委托方式更可靠
+		/// </summary>
+		private void ConnectButtonSignal(Button? button, string methodName)
+		{
+			if (button == null) return;
+			var callable = new Callable(this, methodName);
+			if (!button.IsConnected(Button.SignalName.Pressed, callable))
+			{
+				button.Connect(Button.SignalName.Pressed, callable);
+			}
+		}
+
 		public override void _Ready()
 		{
 			// 自动查找节点
@@ -64,36 +78,13 @@ namespace Kuros.UI
 			CompendiumWindow ??= GetNodeOrNull<CompendiumWindow>("CompendiumWindow");
 			CompendiumWindow ??= GetNodeOrNull<Control>("CompendiumWindow") as CompendiumWindow;
 
-			// 连接按钮信号
-			if (StartGameButton != null)
-			{
-				StartGameButton.Pressed += OnStartGamePressed;
-			}
-
-			if (ModeSelectionButton != null)
-			{
-				ModeSelectionButton.Pressed += OnModeSelectionPressed;
-			}
-
-			if (CompendiumButton != null)
-			{
-				CompendiumButton.Pressed += OnCompendiumPressed;
-			}
-
-			if (LoadGameButton != null)
-			{
-				LoadGameButton.Pressed += OnLoadGamePressed;
-			}
-
-			if (SettingsButton != null)
-			{
-				SettingsButton.Pressed += OnSettingsPressed;
-			}
-
-			if (QuitButton != null)
-			{
-				QuitButton.Pressed += OnQuitPressed;
-			}
+			// 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
+			ConnectButtonSignal(StartGameButton, nameof(OnStartGamePressed));
+			ConnectButtonSignal(ModeSelectionButton, nameof(OnModeSelectionPressed));
+			ConnectButtonSignal(CompendiumButton, nameof(OnCompendiumPressed));
+			ConnectButtonSignal(LoadGameButton, nameof(OnLoadGamePressed));
+			ConnectButtonSignal(SettingsButton, nameof(OnSettingsPressed));
+			ConnectButtonSignal(QuitButton, nameof(OnQuitPressed));
 		}
 
 		private void OnStartGamePressed()

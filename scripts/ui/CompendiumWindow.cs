@@ -118,9 +118,14 @@ namespace Kuros.UI
             WeaponSpecialValue ??= GetNodeOrNull<Label>("MainPanel/RootMargin/RootVBox/Tabs/WeaponTab/WeaponBody/WeaponRightPanel/WeaponRightVBox/WeaponStatsSection/WeaponStatsGrid/WeaponSpecialValue");
             WeaponEffectDescription ??= GetNodeOrNull<RichTextLabel>("MainPanel/RootMargin/RootVBox/Tabs/WeaponTab/WeaponBody/WeaponRightPanel/WeaponRightVBox/WeaponEffectSection/WeaponEffectScroll/WeaponEffectDescription");
 
+            // 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
             if (CloseButton != null)
             {
-                CloseButton.Pressed += HideWindow;
+                var callable = new Callable(this, nameof(HideWindow));
+                if (!CloseButton.IsConnected(Button.SignalName.Pressed, callable))
+                {
+                    CloseButton.Connect(Button.SignalName.Pressed, callable);
+                }
             }
         }
 
@@ -458,7 +463,10 @@ namespace Kuros.UI
             };
 
             button.AddThemeFontSizeOverride("font_size", 18);
-            button.Pressed += () => SelectMonster(entry);
+            // 将 entry 存储到按钮的元数据中，使用 Callable.From 连接信号
+            button.SetMeta("monster_entry_id", entry.Id);
+            var callable = Callable.From(() => SelectMonster(entry));
+            button.Connect(Button.SignalName.Pressed, callable);
             return button;
         }
 
@@ -606,7 +614,10 @@ namespace Kuros.UI
             };
 
             button.AddThemeFontSizeOverride("font_size", 18);
-            button.Pressed += () => SelectNpc(entry);
+            // 使用 Callable.From 连接信号
+            button.SetMeta("npc_entry_id", entry.Id);
+            var callable = Callable.From(() => SelectNpc(entry));
+            button.Connect(Button.SignalName.Pressed, callable);
             return button;
         }
 
@@ -621,7 +632,10 @@ namespace Kuros.UI
             };
 
             button.AddThemeFontSizeOverride("font_size", 18);
-            button.Pressed += () => SelectWeapon(entry);
+            // 使用 Callable.From 连接信号
+            button.SetMeta("weapon_entry_id", entry.Id);
+            var callable = Callable.From(() => SelectWeapon(entry));
+            button.Connect(Button.SignalName.Pressed, callable);
             return button;
         }
 

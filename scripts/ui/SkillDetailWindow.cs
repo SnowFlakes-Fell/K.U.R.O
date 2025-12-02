@@ -33,16 +33,28 @@ namespace Kuros.UI
             HideWindow();
         }
 
+        /// <summary>
+        /// 使用 Godot 原生 Connect 方法连接按钮信号
+        /// 这种方式在导出版本中比 C# 委托方式更可靠
+        /// </summary>
+        private void ConnectButtonSignal(Button? button, string methodName)
+        {
+            if (button == null) return;
+            var callable = new Callable(this, methodName);
+            if (!button.IsConnected(Button.SignalName.Pressed, callable))
+            {
+                button.Connect(Button.SignalName.Pressed, callable);
+            }
+        }
+
         private void CacheNodeReferences()
         {
             CloseButton ??= GetNodeOrNull<Button>("MainPanel/Header/CloseButton");
             SkillsScrollContainer ??= GetNodeOrNull<ScrollContainer>("MainPanel/Body/SkillsScroll");
             SkillsContainer ??= GetNodeOrNull<VBoxContainer>("MainPanel/Body/SkillsScroll/SkillsContainer");
 
-            if (CloseButton != null)
-            {
-                CloseButton.Pressed += HideWindow;
-            }
+            // 使用 Godot 原生 Connect 方法连接信号，在导出版本中更可靠
+            ConnectButtonSignal(CloseButton, nameof(HideWindow));
         }
 
         /// <summary>
