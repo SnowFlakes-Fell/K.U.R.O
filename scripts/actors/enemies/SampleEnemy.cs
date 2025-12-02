@@ -29,9 +29,16 @@ public partial class SampleEnemy : GameActor
         base._Ready();
         
         // Try to find areas if not assigned (they are nested under Sprite2D in the scene)
-        if (AttackArea == null) AttackArea = GetNodeOrNull<Area2D>("Sprite2D/AttackArea");
-        if (DetectionArea == null) DetectionArea = GetNodeOrNull<Area2D>("Sprite2D/DetectionArea");
-        
+        if (AttackArea == null) 
+        {
+            AttackArea = GetNodeOrNull<Area2D>("Sprite2D/AttackArea");
+            if (AttackArea == null) GD.PrintErr("AttackArea not found at Sprite2D/AttackArea");
+        }
+        if (DetectionArea == null) 
+        {
+            DetectionArea = GetNodeOrNull<Area2D>("Sprite2D/DetectionArea");
+            if (DetectionArea == null) GD.PrintErr("DetectionArea not found at Sprite2D/DetectionArea");
+        }
         RefreshPlayerReference();
     }
     
@@ -67,7 +74,7 @@ public partial class SampleEnemy : GameActor
     
     public void PerformAttack()
     {
-    AttackTimer = AttackCooldown; 
+        AttackTimer = AttackCooldown; 
         GameLogger.Info(nameof(SampleEnemy), "Enemy PerformAttack");
         
         RefreshPlayerReference();
