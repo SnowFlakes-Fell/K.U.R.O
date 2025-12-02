@@ -45,9 +45,14 @@ namespace Kuros.Actors.Heroes
         /// <summary>
         /// 檢查左手選中的快捷欄槽位是否有物品
         /// </summary>
-        public bool HasSelectedQuickBarItem => GetSelectedQuickBarStack() != null && 
-                                                !GetSelectedQuickBarStack()!.IsEmpty &&
-                                                GetSelectedQuickBarStack()!.Item.ItemId != "empty_item";
+        public bool HasSelectedQuickBarItem
+        {
+            get
+            {
+                var stack = GetSelectedQuickBarStack();
+                return stack != null && !stack.IsEmpty && stack.Item.ItemId != "empty_item";
+            }
+        }
 
         // 事件
         public event Action<ItemDefinition>? ItemPicked;
