@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=9 format=3 uid="uid://weapon_a0_yaomeng1"]
+[gd_resource type="Resource" load_steps=8 format=3 uid="uid://weapon_a0_yaomeng1"]
 
 [ext_resource type="Script" path="res://scripts/items/ItemDefinition.cs" id="1_item_definition"]
 [ext_resource type="Script" path="res://scripts/items/attributes/ItemAttributeEntry.cs" id="2_attribute_entry"]
@@ -7,7 +7,8 @@
 [ext_resource type="Resource" path="res://resources/items/skills/WeaponYaomengSynergyPassiveSkill.tres" id="5_synergy_skill"]
 [ext_resource type="PackedScene" path="res://scenes/items/Weapon_A0_Yaomeng1_WorldItem.tscn" id="6_world_item"]
 
-[sub_resource type="ItemAttributeEntry" id="Attribute_AttackPower"]
+[sub_resource type="Resource" id="Attribute_AttackPower"]
+script = ExtResource("2_attribute_entry")
 AttributeId = "attack_power"
 Value = 11.0
 Notes = "妖梦一式提供 11 点攻击力"
@@ -22,7 +23,7 @@ Category = "Weapon"
 MaxStackSize = 1
 Tags = PackedStringArray("tag_weapon")
 AttributeEntries = Array[Resource]([SubResource("Attribute_AttackPower")])
-EffectEntries = Array[Resource]()
+EffectEntries = Array[Resource]([])
 DurabilityConfig = null
 WeaponSkillResources = Array[Resource]([ExtResource("4_active_skill"), ExtResource("5_synergy_skill")])
 WorldScenePath = ExtResource("6_world_item")

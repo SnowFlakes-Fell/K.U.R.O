@@ -12,6 +12,7 @@ namespace Kuros.Items
     /// <summary>
     /// 基础物品定义资源，用于描述可被背包、装备栏等系统引用的物品模板。
     /// </summary>
+    [GlobalClass]
     public partial class ItemDefinition : Resource
     {
         [ExportGroup("Identity")]

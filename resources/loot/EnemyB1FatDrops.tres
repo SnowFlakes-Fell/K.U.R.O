@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=10 format=3 uid="uid://enemy_b1_fat_drops"]
+[gd_resource type="Resource" load_steps=11 format=3 uid="uid://enemy_b1_fat_drops"]
 
 [ext_resource type="Script" path="res://scripts/systems/loot/LootDropTable.cs" id="1_table"]
 [ext_resource type="Script" path="res://scripts/systems/loot/LootDropEntry.cs" id="2_entry"]

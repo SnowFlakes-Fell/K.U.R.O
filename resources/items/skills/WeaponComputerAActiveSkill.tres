@@ -1,10 +1,11 @@
-[gd_resource type="Resource" load_steps=4 format=3 uid="uid://weapon_computer_a_active_skill"]
+[gd_resource type="Resource" load_steps=5 format=3 uid="uid://weapon_computer_a_active_skill"]
 
 [ext_resource type="Script" path="res://scripts/items/weapons/WeaponSkillDefinition.cs" id="1"]
 [ext_resource type="Script" path="res://scripts/items/effects/ItemEffectEntry.cs" id="2"]
 [ext_resource type="PackedScene" path="res://resources/effects/ComputerAAnnihilationEffect.tscn" id="3"]
 
-[sub_resource type="ItemEffectEntry" id="Effect_ComputerA_Active"]
+[sub_resource type="Resource" id="Effect_ComputerA_Active"]
+script = ExtResource("2")
 Trigger = 1
 EffectScene = ExtResource("3")
 Notes = "瞬间清屏，累计 3 次后弹错并崩溃。"

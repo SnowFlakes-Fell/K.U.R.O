@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=7 format=3 uid="uid://weapon_a1_umbrella"]
+[gd_resource type="Resource" load_steps=8 format=3 uid="uid://weapon_a1_umbrella"]
 
 [ext_resource type="Script" path="res://scripts/items/ItemDefinition.cs" id="1_item_definition"]
 [ext_resource type="Script" path="res://scripts/items/attributes/ItemAttributeEntry.cs" id="2_attribute_entry"]
@@ -7,7 +7,8 @@
 [ext_resource type="PackedScene" path="res://scenes/items/ExampleWorldItem.tscn" id="5_world_item"]
 [ext_resource type="Resource" path="res://resources/items/skills/WeaponBlockSkill_Umbrella.tres" id="6_block_skill"]
 
-[sub_resource type="ItemAttributeEntry" id="Attribute_AttackPower"]
+[sub_resource type="Resource" id="Attribute_AttackPower"]
+script = ExtResource("2_attribute_entry")
 AttributeId = "attack_power"
 Value = 6.0
 Notes = "伞柄提供 6 点攻击力"
@@ -22,7 +23,7 @@ Category = "Weapon"
 MaxStackSize = 1
 Tags = PackedStringArray("tag_weapon")
 AttributeEntries = Array[Resource]([SubResource("Attribute_AttackPower")])
-EffectEntries = Array[Resource]()
+EffectEntries = Array[Resource]([])
 WeaponSkillResources = Array[Resource]([ExtResource("6_block_skill")])
 WorldScenePath = ExtResource("5_world_item")
 

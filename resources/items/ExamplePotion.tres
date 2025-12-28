@@ -6,7 +6,8 @@
 [ext_resource type="Script" uid="uid://bv0es4osw3x0r" path="res://scripts/items/effects/ItemEffectEntry.cs" id="2_k6ymq"]
 [ext_resource type="Resource" path="res://resources/items/skills/ExampleSlashSkill.tres" id="3"]
 
-[sub_resource type="ItemAttributeEntry" id="Attribute_AttackPower"]
+[sub_resource type="Resource" id="Attribute_AttackPower"]
+script = ExtResource("1_47noo")
 AttributeId = "attack_power"
 Value = 5.0
 Notes = "拾取即增加 5 点攻击力"

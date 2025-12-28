@@ -1,10 +1,11 @@
-[gd_resource type="Resource" load_steps=7 format=3 uid="uid://weapon_unarmed_default"]
+[gd_resource type="Resource" load_steps=5 format=3 uid="uid://weapon_unarmed_default"]
 
 [ext_resource type="Script" path="res://scripts/items/ItemDefinition.cs" id="1_item_definition"]
 [ext_resource type="Script" path="res://scripts/items/attributes/ItemAttributeEntry.cs" id="2_attribute_entry"]
 [ext_resource type="Resource" path="res://resources/items/skills/WeaponUnarmedPassiveSkill.tres" id="3_unarmed_skill"]
 
-[sub_resource type="ItemAttributeEntry" id="Attribute_AttackPower"]
+[sub_resource type="Resource" id="Attribute_AttackPower"]
+script = ExtResource("2_attribute_entry")
 AttributeId = "attack_power"
 Value = 2.0
 Notes = "空手攻击基础伤害"
@@ -17,6 +18,6 @@ Description = "未装备武器时的默认状态，击中敌人可短暂眩晕�
 Category = "Weapon"
 MaxStackSize = 1
 AttributeEntries = Array[Resource]([SubResource("Attribute_AttackPower")])
-EffectEntries = Array[Resource]()
+EffectEntries = Array[Resource]([])
 WeaponSkillResources = Array[Resource]([ExtResource("3_unarmed_skill")])
 

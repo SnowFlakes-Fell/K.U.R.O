@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=7 format=3 uid="uid://weapon_a0_manto"]
+[gd_resource type="Resource" load_steps=8 format=3 uid="uid://weapon_a0_manto"]
 
 [ext_resource type="Script" path="res://scripts/items/ItemDefinition.cs" id="1"]
 [ext_resource type="Script" path="res://scripts/items/attributes/ItemAttributeEntry.cs" id="2"]
@@ -6,12 +6,14 @@
 [ext_resource type="Texture2D" path="res://icon.svg" id="4"]
 [ext_resource type="PackedScene" path="res://resources/effects/HealSelfOnHitEffect.tscn" id="5"]
 
-[sub_resource type="ItemAttributeEntry" id="Attribute_AttackPower"]
+[sub_resource type="Resource" id="Attribute_AttackPower"]
+script = ExtResource("2")
 AttributeId = "attack_power"
 Value = 1.0
 Notes = "披风提供 1 点基础攻击"
 
-[sub_resource type="ItemEffectEntry" id="Effect_HealOnHit"]
+[sub_resource type="Resource" id="Effect_HealOnHit"]
+script = ExtResource("3")
 Trigger = 1
 EffectScene = ExtResource("5")
 Notes = "命中时回复 1 点生命值"
@@ -27,5 +29,5 @@ MaxStackSize = 1
 Tags = PackedStringArray("tag_weapon")
 AttributeEntries = Array[Resource]([SubResource("Attribute_AttackPower")])
 EffectEntries = Array[Resource]([SubResource("Effect_HealOnHit")])
-WeaponSkillResources = Array[Resource]()
+WeaponSkillResources = Array[Resource]([])
 

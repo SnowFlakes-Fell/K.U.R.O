@@ -15,6 +15,7 @@ namespace Kuros.Items.Effects
     /// <summary>
     /// 描述物品可施加的效果，支持不同触发时机。
     /// </summary>
+    [GlobalClass]
     public partial class ItemEffectEntry : Resource
     {
         [Export] public ItemEffectTrigger Trigger { get; set; } = ItemEffectTrigger.OnPickup;

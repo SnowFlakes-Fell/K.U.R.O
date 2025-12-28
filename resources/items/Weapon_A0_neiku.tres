@@ -5,7 +5,8 @@
 [ext_resource type="Texture2D" path="res://icon.svg" id="3"]
 [ext_resource type="Resource" path="res://resources/items/skills/WeaponNeikuPassiveSkill.tres" id="4"]
 
-[sub_resource type="ItemAttributeEntry" id="Attribute_AttackPower"]
+[sub_resource type="Resource" id="Attribute_AttackPower"]
+script = ExtResource("2")
 AttributeId = "attack_power"
 Value = 0.0
 Notes = "初始攻击力为 0，靠被动叠加"
@@ -20,6 +21,6 @@ Category = "Weapon"
 MaxStackSize = 1
 Tags = PackedStringArray("tag_weapon")
 AttributeEntries = Array[Resource]([SubResource("Attribute_AttackPower")])
-EffectEntries = Array[Resource]()
+EffectEntries = Array[Resource]([])
 WeaponSkillResources = Array[Resource]([ExtResource("4")])
 

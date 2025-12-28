@@ -20,7 +20,7 @@
 [ext_resource type="Script" uid="uid://bsa4kolrnan6p" path="res://scripts/actors/heroes/states/PlayerDyingState.cs" id="23_player_dying"]
 [ext_resource type="Script" uid="uid://cp40kowtn1ho3" path="res://scripts/actors/heroes/states/PlayerDeadState.cs" id="24_player_dead"]
 [ext_resource type="PackedScene" path="res://scenes/actors/npc/SimpleNPC.tscn" id="25_simple_npc"]
-[ext_resource type="Script" uid="uid://cpusew8f1r5hc" path="res://scripts/actors/heroes/PlayerItemAttachment.cs" id="27_item_attachment"]
+[ext_resource type="Script" uid="uid://c1vumadqlusfa" path="res://scripts/actors/heroes/PlayerItemAttachment.cs" id="27_item_attachment"]
 [ext_resource type="Resource" path="res://data/TestItem2.tres" id="27_test_item_2"]
 [ext_resource type="Resource" path="res://data/TestItem3.tres" id="28_test_item_3"]
 [ext_resource type="Script" uid="uid://b0t8cfl3khjix" path="res://scripts/actors/heroes/PlayerItemInteractionComponent.cs" id="29_item_interaction"]
