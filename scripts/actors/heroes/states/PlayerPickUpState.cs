@@ -63,7 +63,8 @@ namespace Kuros.Actors.Heroes.States
                 Actor.AnimPlayer.Play(PickAnimation);
                 // Set animation playback speed only for pick up animation
                 Actor.AnimPlayer.SpeedScale = PickUpAnimationSpeed;
-                _animRemaining = (float)Actor.AnimPlayer.CurrentAnimationLength;
+                var speed = Mathf.Max(PickUpAnimationSpeed, 0.0001f);
+                _animRemaining = (float)Actor.AnimPlayer.CurrentAnimationLength / speed;
             }
             else
             {
