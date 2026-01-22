@@ -7,11 +7,12 @@ namespace Kuros.Actors.Heroes.States
     /// </summary>
     public partial class PlayerFrozenState : PlayerState
     {
-        [Export(PropertyHint.Range, "0.1,10,0.1")]
         public float FrozenDuration = 2.0f;
+        public float FrozenAnimationSpeed = 1.0f;
 
         private float _timer;
         private bool _externallyHeld;
+        private float _originalSpeedScale = 1.0f;
 
         public override void Enter()
         {
@@ -21,6 +22,9 @@ namespace Kuros.Actors.Heroes.States
 
             if (Actor.AnimPlayer != null)
             {
+                // Save original speed scale before modifying
+                _originalSpeedScale = Actor.AnimPlayer.SpeedScale;
+                
                 if (Actor.AnimPlayer.HasAnimation("animations/hit"))
                 {
                     Actor.AnimPlayer.Play("animations/hit");
@@ -29,6 +33,17 @@ namespace Kuros.Actors.Heroes.States
                 {
                     Actor.AnimPlayer.Play("animations/Idle");
                 }
+                // Set animation playback speed only for frozen animation
+                Actor.AnimPlayer.SpeedScale = FrozenAnimationSpeed;
+            }
+        }
+        
+        public override void Exit()
+        {
+            // Restore original animation speed when leaving frozen state
+            if (Actor.AnimPlayer != null)
+            {
+                Actor.AnimPlayer.SpeedScale = _originalSpeedScale;
             }
         }
 

@@ -1,12 +1,11 @@
-[gd_resource type="Resource" load_steps=11 format=3 uid="uid://supplies_pudding"]
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=10 format=3 uid="uid://dnjatms64g670"]
 
-[ext_resource type="Script" path="res://scripts/items/ItemDefinition.cs" id="1_item_definition"]
-[ext_resource type="Script" path="res://scripts/items/attributes/ItemAttributeEntry.cs" id="2_attribute_entry"]
-[ext_resource type="Script" path="res://scripts/items/effects/ItemEffectEntry.cs" id="3_effect_entry"]
-[ext_resource type="Texture2D" path="res://icon.svg" id="4_icon"]
-[ext_resource type="PackedScene" path="res://scenes/items/ExampleWorldItem.tscn" id="5_world_item"]
+[ext_resource type="Script" uid="uid://dfgtff7mly02w" path="res://scripts/items/ItemDefinition.cs" id="1_item_definition"]
+[ext_resource type="Script" uid="uid://b4tcdtjy6u7ee" path="res://scripts/items/attributes/ItemAttributeEntry.cs" id="2_attribute_entry"]
+[ext_resource type="Script" uid="uid://bv0es4osw3x0r" path="res://scripts/items/effects/ItemEffectEntry.cs" id="3_effect_entry"]
+[ext_resource type="Texture2D" uid="uid://dccrl4lpl0t2h" path="res://icon.svg" id="4_icon"]
 [ext_resource type="PackedScene" path="res://resources/effects/IncreaseMaxHealthEffect.tscn" id="6_increase_max_health"]
-[ext_resource type="Script" path="res://scripts/items/durability/ItemDurabilityConfig.cs" id="durability_script"]
+[ext_resource type="Script" uid="uid://bkm4r2swk5lyl" path="res://scripts/items/durability/ItemDurabilityConfig.cs" id="durability_script"]
 
 [sub_resource type="Resource" id="Attribute_AttackPower"]
 script = ExtResource("2_attribute_entry")
@@ -17,8 +16,6 @@ Notes = "布丁可作为临时武器，提供 2 点攻击力"
 [sub_resource type="Resource" id="Durability_Config"]
 script = ExtResource("durability_script")
 MaxDurability = 1
-DamagePerUse = 1
-DamagePerHit = 1
 IsRepairable = false
 BreakBehavior = 0
 
@@ -27,10 +24,10 @@ script = ExtResource("3_effect_entry")
 Trigger = 2
 EffectScene = ExtResource("6_increase_max_health")
 Notes = "食用后永久提升最大生命并回复 1 点生命"
-PropertyOverrides = {
-"MaxHealthIncrease": 1,
-"HealAmount": 1
-}
+PropertyOverrides = Dictionary[String, Variant]({
+"HealAmount": 1,
+"MaxHealthIncrease": 1
+})
 
 [resource]
 script = ExtResource("1_item_definition")
@@ -40,10 +37,6 @@ Description = "甜美布丁，既可当作轻型武器，也能在食用后永�
 Icon = ExtResource("4_icon")
 Category = "Supplies"
 MaxStackSize = 1
-Tags = PackedStringArray("tag_food", "tag_weapon")
-AttributeEntries = Array[Resource]([SubResource("Attribute_AttackPower")])
-EffectEntries = Array[Resource]([SubResource("Effect_OnConsume")])
+AttributeEntries = Array[ExtResource("2_attribute_entry")]([SubResource("Attribute_AttackPower")])
+EffectEntries = Array[ExtResource("3_effect_entry")]([SubResource("Effect_OnConsume")])
 DurabilityConfig = SubResource("Durability_Config")
-WeaponSkillResources = Array[Resource]([])
-WorldScenePath = ExtResource("5_world_item")
-

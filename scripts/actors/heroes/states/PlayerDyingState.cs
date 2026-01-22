@@ -7,8 +7,10 @@ namespace Kuros.Actors.Heroes.States
     /// </summary>
     public partial class PlayerDyingState : PlayerState
     {
-        [Export(PropertyHint.Range, "0,10,0.01")] public float DeathDuration = 1.0f;
-        [Export] public bool FreezeMotion = true;
+        public float DeathDuration = 1.0f;
+        public bool FreezeMotion = true;
+        public float DyingAnimationSpeed = 1.0f;
+        private float _originalSpeedScale = 1.0f;
 
         private float _timer;
 
@@ -16,11 +18,28 @@ namespace Kuros.Actors.Heroes.States
         {
             _timer = DeathDuration;
             Player.AttackTimer = 0f;
+            
+            // Save original speed scale before modifying
+            if (Actor.AnimPlayer != null)
+            {
+                _originalSpeedScale = Actor.AnimPlayer.SpeedScale;
+                // Set animation playback speed only for dying animation
+                Actor.AnimPlayer.SpeedScale = DyingAnimationSpeed;
+            }
 
             if (FreezeMotion)
             {
                 Player.Velocity = Vector2.Zero;
                 Player.MoveAndSlide();
+            }
+        }
+        
+        public override void Exit()
+        {
+            // Restore original animation speed when leaving dying state
+            if (Actor.AnimPlayer != null)
+            {
+                Actor.AnimPlayer.SpeedScale = _originalSpeedScale;
             }
         }
 

@@ -7,11 +7,13 @@ namespace Kuros.Actors.Heroes.States
     /// </summary>
     public partial class PlayerPickUpState : PlayerState
     {
-        [Export] public string PickAnimation = "animations/pickup";
+        public string PickAnimation = "animations/pickup";
+        public float PickUpAnimationSpeed = 1.0f;
 
         private PlayerItemInteractionComponent? _interaction;
         private float _animRemaining;
         private bool _animationFinished;
+        private float _originalSpeedScale = 1.0f;
 
         protected override void _ReadyState()
         {
@@ -23,7 +25,24 @@ namespace Kuros.Actors.Heroes.States
         {
             Player.Velocity = Vector2.Zero;
             _animationFinished = false;
+
+            // 无论动画是否存在，只要有 AnimPlayer 就立即缓存当前 SpeedScale，
+            // 避免 Exit 时错误地恢复为硬编码的 1.0f。
+            if (Actor.AnimPlayer != null)
+            {
+                _originalSpeedScale = Actor.AnimPlayer.SpeedScale;
+            }
+
             PlayAnimation();
+        }
+        
+        public override void Exit()
+        {
+            // Restore original animation speed when leaving pick up state
+            if (Actor.AnimPlayer != null)
+            {
+                Actor.AnimPlayer.SpeedScale = _originalSpeedScale;
+            }
         }
 
         public override void PhysicsUpdate(double delta)
@@ -42,7 +61,10 @@ namespace Kuros.Actors.Heroes.States
             if (Actor.AnimPlayer != null && Actor.AnimPlayer.HasAnimation(PickAnimation))
             {
                 Actor.AnimPlayer.Play(PickAnimation);
-                _animRemaining = (float)Actor.AnimPlayer.CurrentAnimationLength;
+                // Set animation playback speed only for pick up animation
+                Actor.AnimPlayer.SpeedScale = PickUpAnimationSpeed;
+                var speed = Mathf.Max(PickUpAnimationSpeed, 0.0001f);
+                _animRemaining = (float)Actor.AnimPlayer.CurrentAnimationLength / speed;
             }
             else
             {

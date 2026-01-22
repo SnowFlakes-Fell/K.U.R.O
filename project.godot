@@ -137,6 +137,11 @@ item_use={
 
 logging/enable_file_logging=true
 
+[layer_names]
+
+2d_physics/layer_1="ItemSolid"
+2d_physics/layer_4="ItemGhost"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

@@ -8,12 +8,14 @@ namespace Kuros.Actors.Heroes.States
     /// </summary>
     public partial class PlayerThrowState : PlayerState
     {
-        [Export] public string ThrowAnimation = "animations/throw";
+        public string ThrowAnimation = "animations/throw";
+        public float ThrowAnimationSpeed = 1.0f;
 
         private PlayerItemInteractionComponent? _interaction;
         private bool _hasRequestedThrow;
         private bool _animationFinished;
         private float _animRemaining;
+        private float _originalSpeedScale = 1.0f;
 
         protected override void _ReadyState()
         {
@@ -39,6 +41,12 @@ namespace Kuros.Actors.Heroes.States
         {
             base.Exit();
             _hasRequestedThrow = false;
+            
+            // Restore original animation speed when leaving throw state
+            if (Actor.AnimPlayer != null)
+            {
+                Actor.AnimPlayer.SpeedScale = _originalSpeedScale;
+            }
         }
 
         public override void PhysicsUpdate(double delta)
@@ -69,8 +77,15 @@ namespace Kuros.Actors.Heroes.States
         {
             if (Actor.AnimPlayer != null && Actor.AnimPlayer.HasAnimation(ThrowAnimation))
             {
+                // Save original speed scale before modifying
+                _originalSpeedScale = Actor.AnimPlayer.SpeedScale;
+                
                 Actor.AnimPlayer.Play(ThrowAnimation);
-            _animRemaining = (float)Actor.AnimPlayer.CurrentAnimationLength;
+                // Set animation playback speed only for throw animation
+                Actor.AnimPlayer.SpeedScale = ThrowAnimationSpeed;
+
+                var speed = Mathf.Max(Actor.AnimPlayer.SpeedScale, 0.0001f);
+                _animRemaining = (float)Actor.AnimPlayer.CurrentAnimationLength / speed;
             }
             else
             {
