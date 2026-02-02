@@ -34,8 +34,22 @@ namespace Kuros.Items.World
 		[Export] public uint GrabAreaCollisionLayer { get; set; } = 1u << 1;  // collision_layer = 2
 		[Export] public uint GrabAreaCollisionMask { get; set; } = 1u;        // collision_mask = 1
 
+		[ExportGroup("Combat")]
+		[Export] public float ThrowDamage {get; set;} = 4f;
+		[Export] public float MinDamageVelocity { get; set; } = 300f; // 造成伤害的最小速度阈值
+        [Export] public float KnockbackForce { get; set; } = 200f; // 击退力度
+		[Export] public bool StopOnHit { get; set; } = false; // 命中敌人后是否停止（false = 穿过敌人）
+
+		[ExportGroup("Durability")]
+		[Export(PropertyHint.Range, "0,100,1")] public int MaxDurability { get; set; } = 0; // 最大耐久度（0 = 无限耐久）
+		[Export] public bool ConsumeDurabilityOnHit { get; set; } = true; // 每次命中是否消耗耐久度
+		[Export] public NodePath DestructionAnimationPlayerPath { get; set; } = new NodePath(""); // 销毁动画播放器路径
+		[Export] public string DestructionAnimationName { get; set; } = "destroy"; // 销毁动画名称
+		[Export] public float DestructionAnimationDuration { get; set; } = 0.5f; // 销毁动画时长（如果动画播放器不存在，使用固定时长）
+
 		[ExportGroup("Physics")]
 		[Export] public NodePath RigidBodyPath { get; set; } = new NodePath(".");
+		[Export] public NodePath HitboxAreaPath { get; set; } = new NodePath("Rigidbody2D/Hitbox");
 		[Export] public double FlightDurationSeconds = 0.4; // how long the item keeps flying before dropping
 		[Export] public float DropLimitDistance { get; set; } = 64f;
 
@@ -67,8 +81,25 @@ namespace Kuros.Items.World
 		private uint _initialCollisionLayer;
 		private uint _initialCollisionMask;
 		private readonly System.Collections.Generic.HashSet<GameActor> _actorsInRange = new();
+		private bool _impactArmed = false; // 是否已激活伤害检测
+		private bool _hasDealtDamage = false; // 是否已造成伤害
+		private readonly System.Collections.Generic.HashSet<GameActor> _hitActors = new(); // 已命中的 Actor，防止重复伤害
+		private Area2D? _hitboxArea; // 用于伤害检测的 Area2D
+		private int _currentDurability = 0; // 当前耐久度
+		private bool _isDestroying = false; // 是否正在销毁中
+		private AnimationPlayer? _destructionAnimPlayer; // 销毁动画播放器引用
 
 		public GameActor? LastDroppedBy { get; set; }
+		
+		/// <summary>
+		/// 获取当前耐久度
+		/// </summary>
+		public int CurrentDurability => _currentDurability;
+		
+		/// <summary>
+		/// 获取耐久度百分比（0.0 - 1.0）
+		/// </summary>
+		public float DurabilityPercent => MaxDurability > 0 ? (float)_currentDurability / MaxDurability : 1.0f;
 		
 		/// <summary>
 		/// 检查指定 Actor 是否在 GrabArea 范围内
@@ -100,6 +131,8 @@ namespace Kuros.Items.World
 			InitializeStack();
 			ResolveRigidBody();
 			ResolveGrabArea();
+			ResolveHitboxArea();
+			InitializeDurability();
 			UpdateSprite();
 			SetProcess(true);
 		}
@@ -111,6 +144,14 @@ namespace Kuros.Items.World
 			{
 				_grabArea.BodyEntered -= OnBodyEntered;
 				_grabArea.BodyExited -= OnBodyExited;
+			}
+			if (_rigidBody != null)
+			{
+				_rigidBody.BodyEntered -= OnRigidBodyEntered;
+			}
+			if (_hitboxArea != null)
+			{
+				_hitboxArea.BodyEntered -= OnHitboxBodyEntered;
 			}
 		}
 
@@ -217,6 +258,14 @@ namespace Kuros.Items.World
 				{
 					// fallback: no-op
 				}
+				
+				// 激活伤害检测
+				if (velocity.LengthSquared() > 0.01f)
+				{
+					_impactArmed = true;
+					_hasDealtDamage = false;
+					_hitActors.Clear();
+				}
 			}
 		}
 
@@ -265,6 +314,8 @@ namespace Kuros.Items.World
 							_isDropping = false;
 							_refreezePending = false;
 							_refreezeTimer = 0.0;
+							// 停止伤害检测
+							_impactArmed = false;
 							return;
 						}
 					}
@@ -281,6 +332,8 @@ namespace Kuros.Items.World
 						try { _rigidBody.LinearVelocity = Vector2.Zero; } catch { }
 						_refreezePending = false;
 						_refreezeTimer = 0.0;
+						// 停止伤害检测
+						_impactArmed = false;
 					}
 				}
 				else
@@ -368,8 +421,28 @@ namespace Kuros.Items.World
 			}
 			else
 			{
-				GD.Print($"{Name}: RigidBody2D resolved at {_rigidBody.GetPath()}");
 				try { _initialGravityScale = _rigidBody.GravityScale; } catch { _initialGravityScale = 0.0f; }
+				
+				// 启用 RigidBody2D 的接触监控以检测碰撞
+				try
+				{
+					_rigidBody.ContactMonitor = true;
+					_rigidBody.MaxContactsReported = 10; // 设置最大接触报告数量
+				}
+				catch (Exception ex)
+				{
+					GD.PushWarning($"{Name}: 无法设置 RigidBody2D 的 ContactMonitor: {ex.Message}");
+				}
+				
+				// 连接 RigidBody2D 的 body_entered 信号用于伤害检测
+				try
+				{
+					_rigidBody.BodyEntered += OnRigidBodyEntered;
+				}
+				catch (Exception ex)
+				{
+					GD.PrintErr($"{Name}: 无法连接 RigidBody2D.BodyEntered 信号: {ex.Message}");
+				}
 			}
 		}
 
@@ -412,13 +485,81 @@ namespace Kuros.Items.World
 			_grabArea.BodyEntered += OnBodyEntered;
 			_grabArea.BodyExited += OnBodyExited;
 			
-			GD.Print($"{Name}: GrabArea resolved at {_grabArea.GetPath()}, collision_layer={GrabAreaCollisionLayer}, collision_mask={GrabAreaCollisionMask}");
+		}
+
+		private void ResolveHitboxArea()
+		{
+			if (HitboxAreaPath.IsEmpty)
+			{
+				// 尝试直接查找 Hitbox
+				_hitboxArea = GetNodeOrNull<Area2D>("Rigidbody2D/Hitbox");
+				if (_hitboxArea == null && _rigidBody != null)
+				{
+					_hitboxArea = _rigidBody.GetNodeOrNull<Area2D>("Hitbox");
+				}
+			}
+			else
+			{
+				_hitboxArea = GetNodeOrNull<Area2D>(HitboxAreaPath);
+			}
+
+			if (_hitboxArea == null)
+			{
+				GD.PushWarning($"{Name}: 未找到 Hitbox Area2D 节点，将仅使用 RigidBody2D 的 body_entered 信号进行伤害检测");
+				return;
+			}
+
+			// 设置 Hitbox 的碰撞层和遮罩，确保可以检测到敌人（collision_layer = 2）
+			_hitboxArea.CollisionLayer = 0; // Hitbox 不占用碰撞层
+			_hitboxArea.CollisionMask = 1u << 1; // 检测第2层（敌人层）
+			_hitboxArea.Monitoring = true;
+			_hitboxArea.Monitorable = false;
+
+			_hitboxArea.BodyEntered += OnHitboxBodyEntered;
+		}
+
+		/// <summary>
+		/// 当 Hitbox Area2D 检测到碰撞时调用（用于伤害检测，更可靠）
+		/// </summary>
+		private void OnHitboxBodyEntered(Node2D body)
+		{
+			// 只在已激活伤害检测时处理
+			if (!_impactArmed)
+			{
+				return;
+			}
+
+			// 检查碰撞的是否是 GameActor（敌人或NPC）
+			if (body is GameActor actor)
+			{
+				// 防止对投掷者造成伤害
+				if (actor == LastDroppedBy)
+				{
+					return;
+				}
+
+				// 防止重复伤害同一个 Actor
+				if (_hitActors.Contains(actor))
+				{
+					return;
+				}
+
+				// 检查速度是否达到造成伤害的阈值
+				if (_rigidBody != null)
+				{
+					var velocity = _rigidBody.LinearVelocity;
+					float speed = velocity.Length();
+
+					if (speed >= MinDamageVelocity)
+					{
+						TryDealImpactDamage(actor, velocity);
+					}
+				}
+			}
 		}
 
 		private void OnBodyEntered(Node2D body)
 		{
-			GD.Print($"[RigidBodyWorldItemEntity] {Name}: OnBodyEntered 被调用，body: {body.Name}, 类型: {body.GetType().Name}");
-			
 			if (body is GameActor actor)
 			{
 				_actorsInRange.Add(actor);
@@ -427,16 +568,7 @@ namespace Kuros.Items.World
 				if (_focusedActor == null)
 				{
 					_focusedActor = actor;
-					GD.Print($"[RigidBodyWorldItemEntity] {Name}: {actor.Name} 进入了可拾取区域 (GrabArea)。物品: {ItemId}, 数量: {Quantity}");
 				}
-				else
-				{
-					GD.Print($"[RigidBodyWorldItemEntity] {Name}: {actor.Name} 进入了可拾取区域，当前范围内有 {_actorsInRange.Count} 个 Actor。");
-				}
-			}
-			else
-			{
-				GD.Print($"[RigidBodyWorldItemEntity] {Name}: 进入的 body 不是 GameActor，类型: {body.GetType().Name}");
 			}
 		}
 
@@ -449,17 +581,314 @@ namespace Kuros.Items.World
 				// 如果离开的是聚焦对象，清除聚焦
 				if (_focusedActor == actor)
 				{
-					GD.Print($"[RigidBodyWorldItemEntity] {Name}: {actor.Name} 离开了可拾取区域 (GrabArea)。");
 					_focusedActor = null;
 					
 					// 如果有其他 Actor 在范围内，选择第一个作为新的聚焦对象
 					if (_actorsInRange.Count > 0)
 					{
 						_focusedActor = _actorsInRange.First();
-						GD.Print($"[RigidBodyWorldItemEntity] {Name}: 切换聚焦对象为 {_focusedActor.Name}。");
 					}
 				}
 			}
+		}
+
+		/// <summary>
+		/// 当 RigidBody2D 与其他物理体碰撞时调用（用于伤害检测）
+		/// </summary>
+		private void OnRigidBodyEntered(Node body)
+		{
+			// 只在已激活伤害检测时处理
+			if (!_impactArmed)
+			{
+				return;
+			}
+
+			// 检查碰撞的是否是 GameActor（敌人或NPC）
+			if (body is GameActor actor)
+			{
+				// 防止对投掷者造成伤害
+				if (actor == LastDroppedBy)
+				{
+					return;
+				}
+
+				// 防止重复伤害同一个 Actor
+				if (_hitActors.Contains(actor))
+				{
+					return;
+				}
+
+				// 检查速度是否达到造成伤害的阈值
+				if (_rigidBody != null)
+				{
+					var velocity = _rigidBody.LinearVelocity;
+					float speed = velocity.Length();
+					
+					if (speed >= MinDamageVelocity)
+					{
+						TryDealImpactDamage(actor, velocity);
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// 尝试对目标造成碰撞伤害
+		/// </summary>
+		private bool TryDealImpactDamage(GameActor target, Vector2 impactVelocity)
+		{
+			if (target == null || _rigidBody == null)
+			{
+				return false;
+			}
+
+			// 计算伤害
+			int damage = Mathf.Max(1, Mathf.RoundToInt(ThrowDamage));
+			
+			if (damage <= 0)
+			{
+				return false;
+			}
+
+			// 造成伤害
+			target.TakeDamage(damage, GlobalPosition, LastDroppedBy);
+			_hitActors.Add(target);
+
+			// 消耗耐久度
+			if (ConsumeDurabilityOnHit && MaxDurability > 0)
+			{
+				ConsumeDurability(1);
+			}
+
+			// 应用击退效果
+			if (KnockbackForce > 0)
+			{
+				var knockbackDirection = (target.GlobalPosition - GlobalPosition).Normalized();
+				if (knockbackDirection.LengthSquared() < 0.01f)
+				{
+					knockbackDirection = impactVelocity.Normalized();
+				}
+				
+				// GameActor 继承自 CharacterBody2D，可以直接应用击退
+				var knockbackVelocity = knockbackDirection * KnockbackForce;
+				target.Velocity += knockbackVelocity;
+			}
+
+			// 如果设置为命中后停止，则停止物品移动
+			if (StopOnHit)
+			{
+				StopItemMovement();
+			}
+
+			// 注意：这里不立即禁用伤害检测，允许对多个目标造成伤害
+			// 如果需要只造成一次伤害，可以取消下面的注释
+			// _hasDealtDamage = true;
+			// _impactArmed = false;
+
+			return true;
+		}
+
+		/// <summary>
+		/// 停止物品的移动（用于命中敌人后停止）
+		/// </summary>
+		private void StopItemMovement()
+		{
+			if (_rigidBody == null) return;
+
+			try
+			{
+				// 停止移动：设置速度为零
+				_rigidBody.LinearVelocity = Vector2.Zero;
+				
+				// 退出飞行状态
+				_inFlight = false;
+				_flightTimer = 0.0;
+				
+				// 恢复重力
+				try 
+				{ 
+					_rigidBody.GravityScale = _initialGravityScale; 
+				} 
+				catch 
+				{ 
+					try 
+					{ 
+						_rigidBody.Set("gravity_scale", _initialGravityScale); 
+					} 
+					catch { } 
+				}
+				
+				// 冻结 RigidBody2D（可选，如果需要完全停止）
+				try 
+				{ 
+					_rigidBody.Set("freeze", true); 
+				} 
+				catch { }
+				
+				// 禁用伤害检测
+				_impactArmed = false;
+				_refreezePending = false;
+				_isDropping = false;
+			}
+			catch (Exception ex)
+			{
+				GD.PrintErr($"{Name}: 停止移动时出错: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// 初始化耐久度
+		/// </summary>
+		private void InitializeDurability()
+		{
+			if (MaxDurability > 0)
+			{
+				_currentDurability = MaxDurability;
+			}
+			else
+			{
+				_currentDurability = -1; // -1 表示无限耐久
+			}
+		}
+
+		/// <summary>
+		/// 消耗耐久度
+		/// </summary>
+		/// <param name="amount">消耗的数量</param>
+		private void ConsumeDurability(int amount)
+		{
+			if (MaxDurability <= 0 || _isDestroying)
+			{
+				return; // 无限耐久或正在销毁中
+			}
+
+			_currentDurability = Mathf.Max(0, _currentDurability - amount);
+
+			// 检查耐久度是否耗尽
+			if (_currentDurability <= 0)
+			{
+				DestroyItem();
+			}
+		}
+
+		/// <summary>
+		/// 销毁物品（播放动画后销毁）
+		/// </summary>
+		private void DestroyItem()
+		{
+			if (_isDestroying)
+			{
+				return; // 已经在销毁中
+			}
+
+			_isDestroying = true;
+
+			// 禁用伤害检测和碰撞
+			_impactArmed = false;
+			if (_hitboxArea != null)
+			{
+				_hitboxArea.Monitoring = false;
+			}
+			if (_grabArea != null)
+			{
+				DisableGrabArea();
+			}
+
+			// 停止移动
+			if (_rigidBody != null)
+			{
+				try
+				{
+					_rigidBody.LinearVelocity = Vector2.Zero;
+					_rigidBody.Set("freeze", true);
+				}
+				catch { }
+			}
+
+			// 播放销毁动画
+			PlayDestructionAnimation();
+		}
+
+		/// <summary>
+		/// 播放销毁动画（预留功能）
+		/// </summary>
+		private void PlayDestructionAnimation()
+		{
+			AnimationPlayer? animPlayer = null;
+
+			// 尝试获取动画播放器
+			if (!DestructionAnimationPlayerPath.IsEmpty)
+			{
+				animPlayer = GetNodeOrNull<AnimationPlayer>(DestructionAnimationPlayerPath);
+			}
+			else
+			{
+				// 尝试在 RigidBody2D 下查找
+				if (_rigidBody != null)
+				{
+					animPlayer = _rigidBody.GetNodeOrNull<AnimationPlayer>("AnimationPlayer");
+				}
+				// 尝试在当前节点下查找
+				if (animPlayer == null)
+				{
+					animPlayer = GetNodeOrNull<AnimationPlayer>("AnimationPlayer");
+				}
+			}
+
+			if (animPlayer != null && animPlayer.HasAnimation(DestructionAnimationName))
+			{
+				// 播放指定的销毁动画
+				animPlayer.Play(DestructionAnimationName);
+				var animation = animPlayer.GetAnimation(DestructionAnimationName);
+				if (animation != null)
+				{
+					var duration = animation.Length;
+					_destructionAnimPlayer = animPlayer;
+					
+					// 连接动画播放完成的信号
+					animPlayer.AnimationFinished += _OnDestructionAnimationFinished;
+					
+					// 备用：使用 Timer 确保动画播放完成后销毁
+					GetTree().CreateTimer(duration).Timeout += () =>
+					{
+						if (IsInstanceValid(this))
+						{
+							_OnDestructionAnimationFinished(new StringName(""));
+						}
+					};
+					return;
+				}
+			}
+
+			// 如果没有找到动画播放器或动画，使用固定时长
+			GetTree().CreateTimer(DestructionAnimationDuration).Timeout += () =>
+			{
+				if (IsInstanceValid(this))
+				{
+					_OnDestructionAnimationFinished(new StringName(""));
+				}
+			};
+		}
+
+		/// <summary>
+		/// 销毁动画播放完成后的回调
+		/// </summary>
+		private void _OnDestructionAnimationFinished(StringName animName)
+		{
+			// 只处理销毁动画
+			if (!string.IsNullOrEmpty(DestructionAnimationName) && !animName.IsEmpty && animName != DestructionAnimationName)
+			{
+				return;
+			}
+
+			// 断开信号连接
+			if (_destructionAnimPlayer != null && IsInstanceValid(_destructionAnimPlayer))
+			{
+				_destructionAnimPlayer.AnimationFinished -= _OnDestructionAnimationFinished;
+				_destructionAnimPlayer = null;
+			}
+			
+			QueueFree();
 		}
 
 		private void DisableGrabArea()
@@ -528,7 +957,6 @@ namespace Kuros.Items.World
 			int accepted = inventory.AddItemSmart(stack.Item, stack.Quantity, showPopupIfFirstTime: true);
 			if (accepted <= 0)
 			{
-				GameLogger.Info(nameof(RigidBodyWorldItemEntity), $"Actor {actor.Name} 的物品栏已满，无法拾取 {ItemId}。");
 				return false;
 			}
 
@@ -538,7 +966,6 @@ namespace Kuros.Items.World
 				Quantity = stack.Quantity;
 				_lastTransferredItem = stack.Item;
 				_lastTransferredAmount = accepted;
-				GameLogger.Info(nameof(RigidBodyWorldItemEntity), $"{actor.Name} 仅拾取了 {accepted} 个 {ItemId}，剩余 {Quantity} 个保留在地面。");
 				RestoreGrabArea();
 				_isPicked = false;
 				return true;

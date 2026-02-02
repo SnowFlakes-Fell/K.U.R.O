@@ -204,6 +204,8 @@ AttachmentParentPath = NodePath("SpineCharacter/Skeleton2D/root/bone/bone2/bone3
 IconOffset = Vector2(0, 0)
 
 [node name="EnemySpawnController" type="Node2D" parent="."]
+y_sort_enabled = true
+position = Vector2(-339, 127)
 script = ExtResource("20_spawn_controller")
 
 [node name="EnemyInstance" parent="EnemySpawnController" instance=ExtResource("21_enemy_b1_fat")]
