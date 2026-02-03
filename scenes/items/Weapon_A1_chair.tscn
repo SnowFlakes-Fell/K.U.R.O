@@ -42,9 +42,11 @@ GrabAreaCollisionMask = 2
 StopOnHit = true
 MaxDurability = 1
 RigidBodyPath = NodePath("Rigidbody2D")
+ThrowCollisionLayer = 2
+ThrowCollisionMask = 2
 
 [node name="Rigidbody2D" type="RigidBody2D" parent="."]
-collision_layer = 2
+collision_mask = 6
 gravity_scale = 0.0
 can_sleep = false
 freeze = true

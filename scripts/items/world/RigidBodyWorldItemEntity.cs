@@ -52,6 +52,8 @@ namespace Kuros.Items.World
 		[Export] public NodePath HitboxAreaPath { get; set; } = new NodePath("Rigidbody2D/Hitbox");
 		[Export] public double FlightDurationSeconds = 0.4; // how long the item keeps flying before dropping
 		[Export] public float DropLimitDistance { get; set; } = 64f;
+		[Export] public uint ThrowCollisionLayer { get; set; } = 1u << 2; // 投掷时的碰撞层（默认第3层：1u<<2=4，占用第3层；墙/地面的Mask需包含第3层才能检测到投掷物品）
+		[Export] public uint ThrowCollisionMask { get; set; } = 0; // 投掷时的碰撞遮罩（0=不检测任何层；如果碰撞只依赖layer，则设为0；如果需要双向检测，则设置为包含墙所在层的值）
 
 
 		public InventoryItemStack? CurrentStack { get; private set; }
@@ -80,6 +82,8 @@ namespace Kuros.Items.World
 		private bool _initialMonitorable;
 		private uint _initialCollisionLayer;
 		private uint _initialCollisionMask;
+		private uint _initialRigidBodyCollisionLayer; // RigidBody2D 的原始碰撞层
+		private uint _initialRigidBodyCollisionMask; // RigidBody2D 的原始碰撞遮罩
 		private readonly System.Collections.Generic.HashSet<GameActor> _actorsInRange = new();
 		private bool _impactArmed = false; // 是否已激活伤害检测
 		private bool _hasDealtDamage = false; // 是否已造成伤害
@@ -88,6 +92,7 @@ namespace Kuros.Items.World
 		private int _currentDurability = 0; // 当前耐久度
 		private bool _isDestroying = false; // 是否正在销毁中
 		private AnimationPlayer? _destructionAnimPlayer; // 销毁动画播放器引用
+		private bool _isThrown = false; // 是否正在投掷中
 
 		public GameActor? LastDroppedBy { get; set; }
 		
@@ -259,12 +264,34 @@ namespace Kuros.Items.World
 					// fallback: no-op
 				}
 				
-				// 激活伤害检测
+				// 激活伤害检测并应用投掷时的碰撞设置
 				if (velocity.LengthSquared() > 0.01f)
 				{
 					_impactArmed = true;
 					_hasDealtDamage = false;
 					_hitActors.Clear();
+					_isThrown = true;
+					
+				// 立即应用投掷时的碰撞设置，避免与敌人/玩家/其他物品碰撞
+				// 先立即设置
+				ApplyThrowCollisionSettings();
+				// 在下一帧物理更新前再次设置（确保生效）
+				CallDeferred(MethodName.ApplyThrowCollisionSettingsDeferred);
+				// 在物理更新后再次验证（双重保险）
+				GetTree().CreateTimer(0.0).Timeout += () =>
+				{
+					if (IsInstanceValid(this) && _isThrown && _rigidBody != null)
+					{
+						var checkLayer = _rigidBody.CollisionLayer;
+						var checkMask = _rigidBody.CollisionMask;
+						if (checkLayer != ThrowCollisionLayer || checkMask != ThrowCollisionMask)
+						{
+							GD.PushWarning($"[{Name}] ⚠️ 物理更新后碰撞设置被改变！强制修复: layer={checkLayer}->{ThrowCollisionLayer}, mask={checkMask}->{ThrowCollisionMask}");
+							_rigidBody.CollisionLayer = ThrowCollisionLayer;
+							_rigidBody.CollisionMask = ThrowCollisionMask;
+						}
+					}
+				};
 				}
 			}
 		}
@@ -274,6 +301,20 @@ namespace Kuros.Items.World
 			base._PhysicsProcess(delta);
 
 			if (_rigidBody == null) return;
+
+			// 如果正在投掷中，确保碰撞设置正确（防止被其他代码覆盖）
+			if (_isThrown)
+			{
+				var currentLayer = _rigidBody.CollisionLayer;
+				var currentMask = _rigidBody.CollisionMask;
+				if (currentLayer != ThrowCollisionLayer || currentMask != ThrowCollisionMask)
+				{
+					GD.Print($"[{Name}] _PhysicsProcess检测到碰撞设置被改变: layer={currentLayer}->{ThrowCollisionLayer}, mask={currentMask}->{ThrowCollisionMask}，正在修复");
+					_rigidBody.CollisionLayer = ThrowCollisionLayer;
+					_rigidBody.CollisionMask = ThrowCollisionMask;
+					_rigidBody.Sleeping = false; // 强制唤醒
+				}
+			}
 
 			// Flight handling: keep flying for a short duration, then start drop
 			if (_inFlight)
@@ -314,8 +355,9 @@ namespace Kuros.Items.World
 							_isDropping = false;
 							_refreezePending = false;
 							_refreezeTimer = 0.0;
-							// 停止伤害检测
+							// 停止伤害检测并恢复原始碰撞设置
 							_impactArmed = false;
+							RestoreRigidBodyCollision();
 							return;
 						}
 					}
@@ -332,8 +374,9 @@ namespace Kuros.Items.World
 						try { _rigidBody.LinearVelocity = Vector2.Zero; } catch { }
 						_refreezePending = false;
 						_refreezeTimer = 0.0;
-						// 停止伤害检测
+						// 停止伤害检测并恢复原始碰撞设置
 						_impactArmed = false;
+						RestoreRigidBodyCollision();
 					}
 				}
 				else
@@ -348,6 +391,12 @@ namespace Kuros.Items.World
 			if (_isPicked)
 			{
 				return false;
+			}
+
+			// 如果正在投掷中，先恢复碰撞设置
+			if (_isThrown)
+			{
+				RestoreRigidBodyCollision();
 			}
 
 			if (!TryTransferToActor(actor))
@@ -422,6 +471,20 @@ namespace Kuros.Items.World
 			else
 			{
 				try { _initialGravityScale = _rigidBody.GravityScale; } catch { _initialGravityScale = 0.0f; }
+				
+				// 保存 RigidBody2D 的原始碰撞设置
+				try
+				{
+					_initialRigidBodyCollisionLayer = _rigidBody.CollisionLayer;
+					_initialRigidBodyCollisionMask = _rigidBody.CollisionMask;
+					GD.Print($"[{Name}] 保存原始碰撞设置: layer={_initialRigidBodyCollisionLayer}, mask={_initialRigidBodyCollisionMask}");
+				}
+				catch
+				{
+					_initialRigidBodyCollisionLayer = 0;
+					_initialRigidBodyCollisionMask = 0;
+					GD.PrintErr($"[{Name}] 无法读取原始碰撞设置，使用默认值0");
+				}
 				
 				// 启用 RigidBody2D 的接触监控以检测碰撞
 				try
@@ -725,14 +788,116 @@ namespace Kuros.Items.World
 				} 
 				catch { }
 				
-				// 禁用伤害检测
+				// 禁用伤害检测并恢复原始碰撞设置
 				_impactArmed = false;
 				_refreezePending = false;
 				_isDropping = false;
+				RestoreRigidBodyCollision();
 			}
 			catch (Exception ex)
 			{
 				GD.PrintErr($"{Name}: 停止移动时出错: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// 应用投掷时的碰撞设置
+		/// </summary>
+		private void ApplyThrowCollisionSettings()
+		{
+			if (_rigidBody == null)
+			{
+				return;
+			}
+
+			try
+			{
+				// 先读取当前值
+				var beforeLayer = _rigidBody.CollisionLayer;
+				var beforeMask = _rigidBody.CollisionMask;
+				
+				// 如果 ThrowCollisionLayer 为 0，确保 mask 也只检测需要的层（避免与静止物件碰撞）
+				// 如果用户想要检测第3层（墙/地面），mask 应该设置为 4（1u<<2）
+				uint finalLayer = ThrowCollisionLayer;
+				uint finalMask = ThrowCollisionMask;
+				
+				// 如果 layer=0 但 mask 不为0，说明用户想要穿透其他物体但检测特定层（如墙）
+				// 这是正确的配置，直接使用
+				
+				// 强制设置碰撞层和遮罩
+				_rigidBody.CollisionLayer = finalLayer;
+				_rigidBody.CollisionMask = finalMask;
+				
+				// 强制唤醒 RigidBody 以确保设置生效
+				_rigidBody.Sleeping = false;
+				
+				// 立即验证设置是否成功
+				var actualLayer = _rigidBody.CollisionLayer;
+				var actualMask = _rigidBody.CollisionMask;
+				
+				GD.Print($"[{Name}] 投掷时碰撞设置: 设置前 layer={beforeLayer}, mask={beforeMask} | 设置后 layer={finalLayer}->{actualLayer}, mask={finalMask}->{actualMask} | 原始: layer={_initialRigidBodyCollisionLayer}, mask={_initialRigidBodyCollisionMask}");
+				
+				// 如果设置失败，输出警告并重试
+				if (actualLayer != finalLayer || actualMask != finalMask)
+				{
+					GD.PushWarning($"[{Name}] ⚠️ 碰撞设置未生效！期望: layer={finalLayer}, mask={finalMask} | 实际: layer={actualLayer}, mask={actualMask}");
+					// 强制重试
+					_rigidBody.CollisionLayer = finalLayer;
+					_rigidBody.CollisionMask = finalMask;
+				}
+			}
+			catch (Exception ex)
+			{
+				GD.PrintErr($"{Name}: 无法设置投掷时的碰撞设置: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// 延迟应用投掷时的碰撞设置（用于确保在物理更新前设置）
+		/// </summary>
+		private void ApplyThrowCollisionSettingsDeferred()
+		{
+			if (_rigidBody == null || !_isThrown)
+			{
+				return;
+			}
+
+			try
+			{
+				_rigidBody.CollisionLayer = ThrowCollisionLayer;
+				_rigidBody.CollisionMask = ThrowCollisionMask;
+				_rigidBody.Sleeping = false; // 强制唤醒
+				
+				var actualLayer = _rigidBody.CollisionLayer;
+				var actualMask = _rigidBody.CollisionMask;
+				GD.Print($"[{Name}] CallDeferred 应用碰撞设置: layer={ThrowCollisionLayer}->{actualLayer}, mask={ThrowCollisionMask}->{actualMask}");
+			}
+			catch (Exception ex)
+			{
+				GD.PrintErr($"{Name}: CallDeferred 无法设置投掷时的碰撞设置: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// 恢复 RigidBody2D 的原始碰撞设置
+		/// </summary>
+		private void RestoreRigidBodyCollision()
+		{
+			if (_rigidBody == null || !_isThrown)
+			{
+				return;
+			}
+
+			try
+			{
+				_rigidBody.CollisionLayer = _initialRigidBodyCollisionLayer;
+				_rigidBody.CollisionMask = _initialRigidBodyCollisionMask;
+				_isThrown = false;
+				GD.Print($"[{Name}] 恢复碰撞设置: layer={_initialRigidBodyCollisionLayer}, mask={_initialRigidBodyCollisionMask}");
+			}
+			catch (Exception ex)
+			{
+				GD.PrintErr($"{Name}: 无法恢复 RigidBody2D 的碰撞设置: {ex.Message}");
 			}
 		}
 
@@ -794,7 +959,7 @@ namespace Kuros.Items.World
 				DisableGrabArea();
 			}
 
-			// 停止移动
+			// 停止移动并恢复碰撞设置
 			if (_rigidBody != null)
 			{
 				try
@@ -803,6 +968,7 @@ namespace Kuros.Items.World
 					_rigidBody.Set("freeze", true);
 				}
 				catch { }
+				RestoreRigidBodyCollision();
 			}
 
 			// 播放销毁动画
