@@ -11,7 +11,7 @@ namespace Kuros.Scenes
 	public partial class MainMenuManager : Control
 	{
 		[ExportCategory("Scene Paths")]
-		[Export] public string BattleScenePath = "res://scenes/ExampleBattle.tscn";
+		[Export] public string BattleScenePath = "res://scenes/Stage_1.tscn";
 
 		private MainMenu? _mainMenu;
 		private ModeSelectionMenu? _modeSelectionMenu;

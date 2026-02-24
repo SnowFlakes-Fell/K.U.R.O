@@ -135,7 +135,7 @@ scale = Vector2(0.4285608, 0.48420432)
 position = Vector2(9.333557, -130.11035)
 scale = Vector2(2.3333912, 2.0652437)
 collision_layer = 0
-collision_mask = 2
+collision_mask = 3
 monitorable = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player/SpineCharacter/AttackArea"]
@@ -204,7 +204,8 @@ AttachmentParentPath = NodePath("SpineCharacter/Skeleton2D/root/bone/bone2/bone3
 IconOffset = Vector2(0, 0)
 
 [node name="EnemySpawnController" type="Node2D" parent="."]
-visible = false
+y_sort_enabled = true
+position = Vector2(-339, 127)
 script = ExtResource("20_spawn_controller")
 
 [node name="EnemyInstance" parent="EnemySpawnController" instance=ExtResource("21_enemy_b1_fat")]
@@ -284,17 +285,9 @@ y_sort_enabled = true
 
 [node name="Weapon_A0_bowl" parent="PickupItems" instance=ExtResource("29_feb7u")]
 position = Vector2(2301, 482)
-collision_layer = 8
-collision_mask = 0
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A0_bowl2" parent="PickupItems" instance=ExtResource("29_feb7u")]
 position = Vector2(2409, 485)
-collision_layer = 8
-collision_mask = 0
-gravity_scale = 0.0
-freeze = true
 
 [node name="Supplies_A0_cake" parent="PickupItems" instance=ExtResource("29_pfjrb")]
 position = Vector2(2115, 456)
@@ -319,77 +312,45 @@ freeze = true
 
 [node name="Weapon_A2_chair" parent="PickupItems" instance=ExtResource("32_xn6vi")]
 position = Vector2(2298, 605)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A2_chair2" parent="PickupItems" instance=ExtResource("32_xn6vi")]
 position = Vector2(2408, 605)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A0_chest2" parent="PickupItems" instance=ExtResource("32_1hj54")]
 position = Vector2(534, 939)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A0_chest3" parent="PickupItems" instance=ExtResource("32_1hj54")]
 position = Vector2(1971, 935)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A0_chest" parent="PickupItems" instance=ExtResource("33_76ea4")]
 position = Vector2(453, 912)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A0_chest4" parent="PickupItems" instance=ExtResource("33_76ea4")]
 position = Vector2(1889, 907)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A0_chest5" parent="PickupItems" instance=ExtResource("33_76ea4")]
 position = Vector2(2673, 901)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_ball" parent="PickupItems" instance=ExtResource("34_hfn0d")]
 position = Vector2(427, 637)
-collision_layer = 8
-collision_mask = 0
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_bed" parent="PickupItems" instance=ExtResource("35_w4oyo")]
 position = Vector2(1008, 312)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_bed2" parent="PickupItems" instance=ExtResource("36_pautr")]
 position = Vector2(792, 310)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_toying" parent="PickupItems" instance=ExtResource("37_pautr")]
 position = Vector2(1501, 547)
-collision_layer = 8
-collision_mask = 0
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_table_lamp" parent="PickupItems" instance=ExtResource("39_ksxye")]
 position = Vector2(585, 207)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_table_lamp2" parent="PickupItems" instance=ExtResource("39_ksxye")]
 position = Vector2(1203, 207)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_cabinet" parent="PickupItems" instance=ExtResource("40_ksxye")]
 position = Vector2(239, 855)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_cat" parent="PickupItems" instance=ExtResource("41_6kiix")]
 position = Vector2(303, 635)
@@ -400,64 +361,40 @@ freeze = true
 
 [node name="Weapon_A1_dock" parent="PickupItems" instance=ExtResource("42_drc5q")]
 position = Vector2(1353, 253)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_chair2" parent="PickupItems" instance=ExtResource("43_7c55y")]
 position = Vector2(565, 339)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_garbage_can" parent="PickupItems" instance=ExtResource("44_mrqws")]
 position = Vector2(279, 532)
-collision_layer = 8
-collision_mask = 0
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_nightstand" parent="PickupItems" instance=ExtResource("45_drc5q")]
 position = Vector2(686, 263)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_nightstand2" parent="PickupItems" instance=ExtResource("45_drc5q")]
 position = Vector2(1114, 269)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_fridge" parent="PickupItems" instance=ExtResource("46_7c55y")]
 position = Vector2(2604, 176)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_robot" parent="PickupItems" instance=ExtResource("47_mrqws")]
 position = Vector2(545, 638)
-collision_layer = 8
-collision_mask = 0
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_sofa" parent="PickupItems" instance=ExtResource("48_ulh2d")]
 position = Vector2(1428, 476)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_perch" parent="PickupItems" instance=ExtResource("49_k2ygy")]
 position = Vector2(1528, 238)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_table" parent="PickupItems" instance=ExtResource("50_w3elf")]
 position = Vector2(97, 441)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_chair" parent="PickupItems" instance=ExtResource("51_a2yqm")]
 position = Vector2(173, 371)
-gravity_scale = 0.0
-freeze = true
 
 [node name="ArillWall" type="StaticBody2D" parent="."]
+collision_layer = 3
+collision_mask = 7
 
 [node name="left" type="CollisionShape2D" parent="ArillWall"]
 position = Vector2(-12, 545)
@@ -527,13 +464,9 @@ texture = ExtResource("58_wccef")
 
 [node name="Weapon_A1_door" parent="Door" instance=ExtResource("59_6yduf")]
 position = Vector2(1704, 850)
-gravity_scale = 0.0
-freeze = true
 
 [node name="Weapon_A1_door2" parent="Door" instance=ExtResource("60_r1vwt")]
 position = Vector2(2874, 788)
-gravity_scale = 0.0
-freeze = true
 
 [node name="AnimatedOBJ" type="Node2D" parent="."]
 
