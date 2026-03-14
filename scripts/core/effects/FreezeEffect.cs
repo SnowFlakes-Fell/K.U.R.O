@@ -39,8 +39,9 @@ namespace Kuros.Core.Effects
         public override void OnRemoved()
         {
             Actor.AttackTimer = 0f;
+            bool skipStateRecovery = Actor.IsDeathSequenceActive || Actor.IsDead;
 
-            if (Actor.StateMachine != null)
+            if (!skipStateRecovery && Actor.StateMachine != null)
             {
                 var current = Actor.StateMachine.CurrentState?.Name;
                 if (current == FrozenStateName)
@@ -55,7 +56,10 @@ namespace Kuros.Core.Effects
                 }
             }
 
-            TryForceQueueNextAttack("FreezeRemoved");
+            if (!skipStateRecovery)
+            {
+                TryForceQueueNextAttack("FreezeRemoved");
+            }
 
             base.OnRemoved();
         }

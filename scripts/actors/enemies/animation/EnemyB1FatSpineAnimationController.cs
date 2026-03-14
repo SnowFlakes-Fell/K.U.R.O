@@ -10,12 +10,12 @@ namespace Kuros.Actors.Enemies.Animation
     public partial class EnemyB1FatSpineAnimationController : EnemySpineAnimationController
     {
         [Export] public NodePath AttackControllerPath { get; set; } = new("StateMachine/Attack/AttackController");
-        [Export] public string IdleAnimation = "Idle";
-        [Export] public string WalkAnimation = "Walk";
-        [Export] public string AttackAnimation = "Attack";
-        [Export] public string SkillAnimation = "Skill";
-        [Export] public string HitAnimation = "Hit";
-        [Export] public string DieAnimation = "Die";
+        [Export] public string IdleAnimation = "idle";
+        [Export] public string WalkAnimation = "walk";
+        [Export] public string AttackAnimation = "attack";
+        [Export] public string SkillAnimation = "skill_01";
+        [Export] public string HitAnimation = "hit";
+        [Export] public string DieAnimation = "death";
         [Export(PropertyHint.Range, "0,1,0.01")] public float MixDuration = 0.15f;
 
         private EnemyB1FatAttackController? _attackController;

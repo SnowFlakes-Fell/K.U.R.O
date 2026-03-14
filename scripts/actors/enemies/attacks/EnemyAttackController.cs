@@ -329,7 +329,7 @@ namespace Kuros.Actors.Enemies.Attacks
 
         private bool ShouldForceAttackState()
         {
-            if (Enemy?.StateMachine == null) return false;
+            if (!IsEnemyAlive() || Enemy?.StateMachine == null) return false;
             if (_queuedAttack == null) return false;
             if (_queuedAttack.CanStart())
             {
@@ -338,6 +338,11 @@ namespace Kuros.Actors.Enemies.Attacks
             }
 
             return false;
+        }
+
+        private bool IsEnemyAlive()
+        {
+            return Enemy != null && !Enemy.IsDeathSequenceActive && !Enemy.IsDead;
         }
 
         private void DebugLog(string message)

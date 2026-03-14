@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using Kuros.Core;
 using Kuros.Systems.FSM;
 using Kuros.Actors.Heroes.States;
@@ -14,6 +15,8 @@ public partial class SamplePlayer : GameActor, IPlayerStatsSource
 {
 	[ExportCategory("Combat")]
 	[Export] public Area2D AttackArea { get; private set; } = null!;
+	private CollisionShape2D? _attackCollisionShape;
+	private readonly Godot.Collections.Array<Rid> _attackQueryExclude = new();
 	public PlayerFrozenState? FrozenState { get; private set; }
 	public PlayerInventoryComponent? InventoryComponent { get; private set; }
 	public InventoryContainer? Backpack => InventoryComponent?.Backpack;
@@ -492,37 +495,165 @@ public partial class SamplePlayer : GameActor, IPlayerStatsSource
 	
 	public void PerformAttackCheck()
 	{
-		// Reset timer just in case, though State usually manages cooldown entry
 		AttackTimer = AttackCooldown;
-		
 		GameLogger.Info(nameof(SamplePlayer), "=== Player attacking frame! ===");
 		
-		int hitCount = 0;
-		
-		if (AttackArea != null)
-		{
-			// REMOVED: Manual Position flipping here. It's now handled in FlipFacing or via Scene Hierarchy.
-			
-			var bodies = AttackArea.GetOverlappingBodies();
-			foreach (var body in bodies)
-			{
-				if (body is SampleEnemy enemy)
-				{
-					enemy.TakeDamage((int)AttackDamage, GlobalPosition, this);
-					hitCount++;
-					GameLogger.Info(nameof(SamplePlayer), $"Hit enemy: {enemy.Name}");
-				}
-			}
-		}
-		else
+		if (AttackArea == null)
 		{
 			GameLogger.Error(nameof(SamplePlayer), "AttackArea is missing! Assign it in Inspector.");
+			return;
 		}
-		
+
+		int hitCount = ApplyDamageWithArea(AttackDamage, (target, isFallback) =>
+		{
+			string suffix = isFallback ? " (fallback)" : string.Empty;
+			GameLogger.Info(nameof(SamplePlayer), $"Hit enemy{suffix}: {target.Name}");
+		});
+
 		if (hitCount == 0)
 		{
 			GameLogger.Info(nameof(SamplePlayer), "No enemies hit!");
 		}
+	}
+
+	protected int ApplyDamageWithArea(float damageAmount, Action<GameActor, bool>? onHit)
+	{
+		if (AttackArea == null)
+		{
+			return 0;
+		}
+
+		CacheAttackCollisionShape();
+		int hitCount = DealDamageFromBodies(damageAmount, onHit);
+		if (hitCount == 0)
+		{
+			hitCount = DealDamageViaShapeQuery(damageAmount, onHit);
+		}
+		return hitCount;
+	}
+
+	private void CacheAttackCollisionShape()
+	{
+		if (_attackCollisionShape != null || AttackArea == null)
+		{
+			return;
+		}
+
+		_attackCollisionShape = AttackArea.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
+		if (_attackCollisionShape != null)
+		{
+			return;
+		}
+
+		foreach (Node child in AttackArea.GetChildren())
+		{
+			if (child is CollisionShape2D shape)
+			{
+				_attackCollisionShape = shape;
+				break;
+			}
+		}
+
+		if (_attackCollisionShape == null)
+		{
+			GD.PushWarning($"{Name}: AttackArea has no CollisionShape2D; fallback queries disabled.");
+		}
+	}
+
+	private int DealDamageFromBodies(float damageAmount, Action<GameActor, bool>? onHit)
+	{
+		if (AttackArea == null)
+		{
+			return 0;
+		}
+
+		var bodies = AttackArea.GetOverlappingBodies();
+		int hitCount = 0;
+		foreach (Node body in bodies)
+		{
+			if (body is GameActor actor && IsValidAttackTarget(actor))
+			{
+				DealDamageToTarget(actor, damageAmount);
+				hitCount++;
+				onHit?.Invoke(actor, false);
+			}
+		}
+		return hitCount;
+	}
+
+	private int DealDamageViaShapeQuery(float damageAmount, Action<GameActor, bool>? onHit)
+	{
+		if (_attackCollisionShape == null || _attackCollisionShape.Shape == null || AttackArea == null)
+		{
+			return 0;
+		}
+
+		var world = GetWorld2D();
+		if (world == null)
+		{
+			return 0;
+		}
+
+		var spaceState = world.DirectSpaceState;
+		if (spaceState == null)
+		{
+			return 0;
+		}
+
+		var query = new PhysicsShapeQueryParameters2D
+		{
+			Shape = _attackCollisionShape.Shape,
+			Transform = _attackCollisionShape.GlobalTransform,
+			CollisionMask = uint.MaxValue,
+			CollideWithAreas = false,
+			CollideWithBodies = true
+		};
+
+		_attackQueryExclude.Clear();
+		_attackQueryExclude.Add(GetRid());
+		query.Exclude = _attackQueryExclude;
+
+		var results = spaceState.IntersectShape(query, 16);
+		int hitCount = 0;
+		var uniqueTargets = new HashSet<GameActor>();
+		foreach (Godot.Collections.Dictionary hit in results)
+		{
+			if (!hit.TryGetValue("collider", out Variant colliderVariant))
+			{
+				continue;
+			}
+
+			if (colliderVariant.VariantType != Variant.Type.Object)
+			{
+				continue;
+			}
+
+			var colliderObject = colliderVariant.As<GodotObject>();
+			if (colliderObject is GameActor actor && IsValidAttackTarget(actor) && uniqueTargets.Add(actor))
+			{
+				DealDamageToTarget(actor, damageAmount);
+				hitCount++;
+				onHit?.Invoke(actor, true);
+			}
+		}
+
+		return hitCount;
+	}
+
+	protected virtual bool IsValidAttackTarget(GameActor candidate)
+	{
+		return candidate != this && candidate.IsInGroup("enemies");
+	}
+
+	private void DealDamageToTarget(GameActor target, float damageAmount)
+	{
+		int finalDamage = Mathf.Max(0, Mathf.RoundToInt(damageAmount));
+		if (finalDamage <= 0)
+		{
+			return;
+		}
+
+		target.TakeDamage(finalDamage, GlobalPosition, this);
 	}
 	
 	public override void TakeDamage(int damage, Vector2? attackOrigin = null, GameActor? attacker = null)

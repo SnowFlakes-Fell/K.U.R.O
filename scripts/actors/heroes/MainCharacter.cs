@@ -219,33 +219,22 @@ namespace Kuros.Actors.Heroes
 				return;
 			}
 
-			// 计算基础伤害
 			float baseDamage = AttackDamage;
-
-			// 应用 InventoryComponent 的攻击力加成
 			if (InventoryComponent != null)
 			{
 				baseDamage += InventoryComponent.GetSelectedAttributeValue(ItemAttributeIds.AttackPower, 0f);
 			}
 
-			// 应用 WeaponSkillController 的伤害倍率
 			if (WeaponSkillController != null)
 			{
 				baseDamage = WeaponSkillController.ModifyAttackDamage(baseDamage);
 			}
 
-			// 执行攻击检测
-			var bodies = AttackArea.GetOverlappingBodies();
-			int hitCount = 0;
-			foreach (var body in bodies)
+			int loggedDamage = Mathf.Max(0, Mathf.RoundToInt(baseDamage));
+			int hitCount = ApplyDamageWithArea(baseDamage, (target, isFallback) =>
 			{
-				if (body is SampleEnemy enemy)
-				{
-					enemy.TakeDamage((int)baseDamage, GlobalPosition, this);
-					hitCount++;
-					GameLogger.Info(nameof(MainCharacter), $"击中敌人: {enemy.Name}, 伤害: {baseDamage}");
-				}
-			}
+				GameLogger.Info(nameof(MainCharacter), $"击中敌人: {target.Name}, 伤害: {loggedDamage}");
+			});
 
 			if (hitCount == 0)
 			{

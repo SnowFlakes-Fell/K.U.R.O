@@ -1,4 +1,5 @@
 using Godot;
+using Kuros.Actors.Heroes;
 
 namespace Kuros.Actors.Heroes.States
 {
@@ -9,18 +10,44 @@ namespace Kuros.Actors.Heroes.States
     {
         public float FrozenDuration = 2.0f;
         public float FrozenAnimationSpeed = 1.0f;
+        [Export] public string SpineFrozenAnimationName = "stun";
 
         private float _timer;
         private bool _externallyHeld;
         private float _originalSpeedScale = 1.0f;
+        private MainCharacter? _mainCharacter;
+        private bool _spineAnimationApplied;
+
+        public bool IsExternallyHeld => _externallyHeld;
+        public float RemainingHoldRatio
+        {
+            get
+            {
+                if (FrozenDuration <= Mathf.Epsilon)
+                {
+                    return 0f;
+                }
+                return Mathf.Clamp(_timer / FrozenDuration, 0f, 1f);
+            }
+        }
 
         public override void Enter()
         {
             _timer = FrozenDuration;
             _externallyHeld = false;
             Actor.Velocity = Vector2.Zero;
+            _mainCharacter = Actor as MainCharacter;
+            _spineAnimationApplied = false;
 
-            if (Actor.AnimPlayer != null)
+            if (_mainCharacter != null)
+            {
+                var animName = string.IsNullOrEmpty(SpineFrozenAnimationName)
+                    ? _mainCharacter.IdleAnimationName
+                    : SpineFrozenAnimationName;
+                _mainCharacter.PlaySpineAnimation(animName, true, FrozenAnimationSpeed);
+                _spineAnimationApplied = true;
+            }
+            else if (Actor.AnimPlayer != null)
             {
                 // Save original speed scale before modifying
                 _originalSpeedScale = Actor.AnimPlayer.SpeedScale;
@@ -41,7 +68,11 @@ namespace Kuros.Actors.Heroes.States
         public override void Exit()
         {
             // Restore original animation speed when leaving frozen state
-            if (Actor.AnimPlayer != null)
+            if (_spineAnimationApplied)
+            {
+                // State 离开时交由下一个状态控制 Spine 动画，无需额外处理
+            }
+            else if (Actor.AnimPlayer != null)
             {
                 Actor.AnimPlayer.SpeedScale = _originalSpeedScale;
             }

@@ -1,4 +1,5 @@
 using Godot;
+using Kuros.UI;
 using Kuros.Utils;
 
 namespace Kuros.Actors.Enemies.Attacks
@@ -16,8 +17,9 @@ namespace Kuros.Actors.Enemies.Attacks
 
 		private int _leftCount;
 		private int _rightCount;
-	private float _escapeTimer;
+		private float _escapeTimer;
 		private bool _escapeResolved;
+		private EscapeHUD? _escapeHud;
 
 	public override void _Ready()
         {
@@ -39,6 +41,8 @@ namespace Kuros.Actors.Enemies.Attacks
             _rightCount = 0;
 			_escapeTimer = EscapeWindowSeconds;
 			_escapeResolved = false;
+			_escapeHud = ResolveEscapeHud(player);
+			_escapeHud?.ShowSequence(RequiredLeftInputs, RequiredRightInputs, EscapeWindowSeconds);
         }
 
 		protected override void UpdateEscapeSequence(SamplePlayer player, double delta)
@@ -57,6 +61,8 @@ namespace Kuros.Actors.Enemies.Attacks
                 _rightCount++;
             }
 
+			_escapeHud?.UpdateSequence(_leftCount, _rightCount, _escapeTimer);
+
 			if (_leftCount >= RequiredLeftInputs && _rightCount >= RequiredRightInputs)
 			{
 				GameLogger.Info(nameof(EnemyChargeEscapeAttack), $"{player.Name} escaped by inputs L:{_leftCount}/R:{_rightCount}.");
@@ -71,6 +77,27 @@ namespace Kuros.Actors.Enemies.Attacks
 			}
 		}
 
-		protected override void OnEscapeSequenceFinished(SamplePlayer player, bool escaped) { }
+		protected override void OnEscapeSequenceFinished(SamplePlayer player, bool escaped)
+		{
+			_escapeHud?.HideSequence();
+			_escapeHud = null;
+		}
+
+		protected override void OnAttackFinished()
+		{
+			base.OnAttackFinished();
+			_escapeHud?.HideSequence();
+			_escapeHud = null;
+		}
+
+		private EscapeHUD? ResolveEscapeHud(SamplePlayer player)
+		{
+			if (_escapeHud != null && GodotObject.IsInstanceValid(_escapeHud))
+			{
+				return _escapeHud;
+			}
+
+			return player.GetNodeOrNull<EscapeHUD>("EscapeHud");
+		}
 	}
 }

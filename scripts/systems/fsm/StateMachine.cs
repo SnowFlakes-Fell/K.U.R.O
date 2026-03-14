@@ -68,17 +68,36 @@ namespace Kuros.Systems.FSM
                 return;
             }
 
+            if (!CanTransitionTo(stateName))
+            {
+                return;
+            }
+
             State newState = _states[stateName];
-            
+
             // Don't re-enter the same state unless we explicitly want to (omitted for now)
             if (CurrentState == newState) return;
 
             CurrentState?.Exit();
-            
+
             CurrentState = newState;
             // GD.Print($"Entered State: {stateName}"); // Debug log
-            
+
             CurrentState.Enter();
+        }
+
+        private bool CanTransitionTo(string stateName)
+        {
+            if (_actor is GameActor actor)
+            {
+                bool isDeathState = stateName == "Dying" || stateName == "Dead";
+                if ((actor.IsDeathSequenceActive || actor.IsDead) && !isDeathState)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

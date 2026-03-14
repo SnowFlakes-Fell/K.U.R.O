@@ -7,7 +7,7 @@ namespace Kuros.Actors.Enemies.States
         public override void Enter()
         {
             Enemy.Velocity = Vector2.Zero;
-            Enemy.AnimPlayer?.Play("animations/Idle");
+            Enemy.AnimPlayer?.Play("animations/idle");
         }
 
         public override void PhysicsUpdate(double delta)

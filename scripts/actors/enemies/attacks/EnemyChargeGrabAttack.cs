@@ -464,6 +464,7 @@ namespace Kuros.Actors.Enemies.Attacks
 		private void TryRequestAttackFromDetection(string reason)
 		{
 			if (Enemy == null) return;
+			if (Enemy.IsDeathSequenceActive || Enemy.IsDead) return;
             if (IsRunning || IsOnCooldown) return;
 			if (Enemy.AttackTimer > 0) return;
 			if (HasActiveGrab) return;
