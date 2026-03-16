@@ -16,7 +16,8 @@ namespace Kuros.Managers
 
 		private readonly WindowPreset[] _presets =
 		{
-			new WindowPreset("fullscreen_1080p", "全屏 1920x1080", DisplayServer.WindowMode.Fullscreen, new Vector2I(1920, 1080)),
+			// 三种预设：全屏 1920x1080、窗口 1920x1080、窗口 1280x720
+			new WindowPreset("fullscreen_1080p", "全屏 1920x1080", DisplayServer.WindowMode.ExclusiveFullscreen, new Vector2I(1920, 1080)),
 			new WindowPreset("window_1080p", "窗口 1920x1080", DisplayServer.WindowMode.Windowed, new Vector2I(1920, 1080)),
 			new WindowPreset("window_720p", "窗口 1280x720", DisplayServer.WindowMode.Windowed, new Vector2I(1280, 720)),
 		};
@@ -169,7 +170,10 @@ namespace Kuros.Managers
 
 		private void ApplyProjectSettings(WindowPreset preset)
 		{
-			ProjectSettings.SetSetting("display/window/size/mode", preset.Mode == DisplayServer.WindowMode.Fullscreen ? 2 : 0);
+			ProjectSettings.SetSetting(
+				"display/window/size/mode",
+				(preset.Mode == DisplayServer.WindowMode.ExclusiveFullscreen || preset.Mode == DisplayServer.WindowMode.Fullscreen) ? 2 : 0
+			);
 			ProjectSettings.SetSetting("display/window/size/viewport_width", preset.Size.X);
 			ProjectSettings.SetSetting("display/window/size/viewport_height", preset.Size.Y);
 			ProjectSettings.SetSetting("display/window/size/initial_position_type", 2);
